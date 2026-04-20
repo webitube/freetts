@@ -7,7 +7,7 @@ import { listener, listenerCtx } from 'https://esm.sh/@milkdown/plugin-listener'
 import { replaceAll } from 'https://esm.sh/@milkdown/utils';
 
 // --- STATE MANAGEMENT ---
-const initialValue = `# Welcome to FreeTTS\n\nPlace your cursor anywhere and press play.`;
+const initialValue = `# Welcome to FreeTTS\n\nPlace your cursor anywhere and press [this link](https://google.com) to test.`;
 let currentMarkdown = initialValue;
 let milkdownEditor = null;
 let isSourceMode = true; 
@@ -25,124 +25,232 @@ const elements = {
     voiceSelect: document.getElementById('voice-select'),
     status: document.getElementById('status-msg'),
     playIcon: document.getElementById('play-icon'),
-    stopIcon: document.getElementById('stop-icon')
+    stopIcon: document.getElementById('stop-icon'),
+    helpToggle: document.getElementById('help-toggle'),
+    helpModal: document.getElementById('help-modal'),
+    helpCloseBtn: document.getElementById('help-close-btn'),
+    helpCloseFooter: document.getElementById('help-close-footer')
 };
 
-// --- THEME & MODAL LOGIC ---
-document.getElementById('theme-toggle').onclick = () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.theme = isDark ? 'dark' : 'light';
-};
+// Initialize source value
+elements.source.value = initialValue;
 
-const toggleHelp = () => document.getElementById('help-modal').classList.toggle('hidden');
-document.getElementById('help-toggle').onclick = toggleHelp;
-document.getElementById('help-close-btn').onclick = toggleHelp;
+// --- LINK INTERCEPTOR ---
+elements.visual.addEventListener('click', (e) => {
+    const link = e.target.closest('a');
+    if (link && !isSourceMode) {
+        e.preventDefault();
+        window.open(link.href, '_blank');
+    }
+});
 
-// --- SPEECH ENGINE ---
-const synth = window.speechSynthesis;
-let voices = [];
-
-function initVoices() {
-    voices = synth.getVoices();
-    if (!voices.length) return;
-    elements.voiceSelect.innerHTML = voices.map((v, i) => 
-        `<option value="${i}">${v.name} (${v.lang})</option>`).join('');
-    elements.status.textContent = "Engine Ready.";
-}
-if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = initVoices;
-initVoices();
-
-// --- UTILS ---
-const findWordStart = (text, idx) => {
-    let s = idx;
-    while (s > 0 && /\w/.test(text[s - 1])) s--;
-    return s;
-};
-
-const cleanMD = (text) => {
-    return text.replace(/[#*_~`|>\[\]\(\)]/g, ' ');
-};
-
-// --- EDITOR INITIALIZATION ---
-async function initEditor() {
+// --- MILKDOWN INITIALIZATION ---
+async function createEditor() {
     milkdownEditor = await Editor.make()
         .config((ctx) => {
-            ctx.set(rootCtx, '#app');
-            ctx.set(defaultValueCtx, initialValue);
-            ctx.get(listenerCtx).markdownUpdated((_, md) => {
-                currentMarkdown = md;
-                if (!isSourceMode) elements.source.value = md;
+            ctx.set(rootCtx, elements.visual);
+            ctx.set(defaultValueCtx, currentMarkdown);
+            ctx.get(listenerCtx).markdownUpdated((ctx, markdown) => {
+                currentMarkdown = markdown;
+                elements.source.value = markdown;
             });
         })
-        .use(nord).use(commonmark).use(gfm).use(history).use(listener)
+        .use(nord)
+        .use(commonmark)
+        .use(gfm)
+        .use(history)
+        .use(listener)
         .create();
-    elements.source.value = initialValue;
 }
-window.onload = initEditor;
 
-// --- VIEW CONTROLS ---
-elements.btnVisual.onclick = () => {
+// --- TAB SWITCHING ---
+async function switchToVisual() {
     if (!isSourceMode) return;
     isSourceMode = false;
-    milkdownEditor.action(replaceAll(elements.source.value));
+    currentMarkdown = elements.source.value;
+    
     elements.container.classList.remove('source-mode');
-    elements.btnVisual.classList.add('bg-white', 'dark:bg-slate-700', 'active-tab');
-    elements.btnSource.classList.remove('bg-white', 'dark:bg-slate-700', 'active-tab');
-};
+    elements.btnSource.classList.remove('active-tab');
+    elements.btnVisual.classList.add('active-tab');
+    
+    if (!milkdownEditor) {
+        await createEditor();
+    } else {
+        milkdownEditor.action(replaceAll(currentMarkdown));
+    }
+}
 
-elements.btnSource.onclick = () => {
+function switchToSource() {
     if (isSourceMode) return;
     isSourceMode = true;
     elements.container.classList.add('source-mode');
-    elements.btnSource.classList.add('bg-white', 'dark:bg-slate-700', 'active-tab');
-    elements.btnVisual.classList.remove('bg-white', 'dark:bg-slate-700', 'active-tab');
-    elements.source.focus();
+    elements.btnVisual.classList.remove('active-tab');
+    elements.btnSource.classList.add('active-tab');
+    elements.source.value = currentMarkdown;
+}
+
+elements.btnVisual.onclick = switchToVisual;
+elements.btnSource.onclick = switchToSource;
+
+// --- MODAL LOGIC ---
+const toggleHelp = (show) => {
+    if (show) {
+        elements.helpModal.classList.remove('hidden');
+    } else {
+        elements.helpModal.classList.add('hidden');
+    }
 };
 
-// --- TTS PLAYBACK LOGIC ---
+elements.helpToggle.onclick = () => toggleHelp(true);
+if (elements.helpCloseBtn) elements.helpCloseBtn.onclick = () => toggleHelp(false);
+if (elements.helpCloseFooter) elements.helpCloseFooter.onclick = () => toggleHelp(false);
+
+elements.helpModal.onclick = (e) => {
+    if (e.target === elements.helpModal) toggleHelp(false);
+};
+
+// --- TTS LOGIC ---
+const synth = window.speechSynthesis;
+let voices = [];
+
+function loadVoices() {
+    voices = synth.getVoices();
+    elements.voiceSelect.innerHTML = voices
+        .map((v, i) => `<option value="${i}">${v.name} (${v.lang})</option>`)
+        .join('');
+}
+if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+loadVoices();
+
+/**
+ * Visual Highlighting Logic
+ */
+function highlightVisualWord(startOffset, wordLength) {
+    const selection = window.getSelection();
+    const range = document.createRange();
+    
+    let charCount = 0;
+    let startNode = null;
+    let startCharIndex = 0;
+    let endNode = null;
+    let endCharIndex = 0;
+
+    // Traverse text nodes to find start and end positions
+    const walker = document.createTreeWalker(elements.visual, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while (node = walker.nextNode()) {
+        const nextCharCount = charCount + node.textContent.length;
+        
+        if (!startNode && startOffset >= charCount && startOffset < nextCharCount) {
+            startNode = node;
+            startCharIndex = startOffset - charCount;
+        }
+        
+        if (startNode && (startOffset + wordLength) <= nextCharCount) {
+            endNode = node;
+            endCharIndex = (startOffset + wordLength) - charCount;
+            break;
+        }
+        charCount = nextCharCount;
+    }
+
+    if (startNode && endNode) {
+        range.setStart(startNode, startCharIndex);
+        range.setEnd(endNode, endCharIndex);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+}
+
+/**
+ * Gets the character offset of the current cursor position in visual editor.
+ */
+function getVisualCursorInfo() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return { text: elements.visual.innerText, offset: 0 };
+
+    const range = selection.getRangeAt(0);
+    const preSelectionRange = range.cloneRange();
+    preSelectionRange.selectNodeContents(elements.visual);
+    preSelectionRange.setEnd(range.startContainer, range.startOffset);
+    
+    const offset = preSelectionRange.toString().length;
+    return { text: elements.visual.innerText, offset };
+}
+
 function togglePlayback() {
     if (isSpeaking) {
         synth.cancel();
         setUIState(false);
         return;
     }
+    
+    const activeSelection = window.getSelection();
+    const selectionText = activeSelection.toString().trim();
 
-    let text = "";
-    let start = elements.source.selectionStart;
-    const end = elements.source.selectionEnd;
+    let textToSpeak = "";
+    let startOffset = 0;
 
-    // REFACTOR: Handle Word Boundary Playback
-    if (isSourceMode) {
-        if (start === end) {
-            start = findWordStart(elements.source.value, start);
-            elements.source.setSelectionRange(start, start);
+    if (selectionText) {
+        textToSpeak = selectionText;
+        // Calculate the absolute starting point of the selection for correct highlighting
+        if (isSourceMode) {
+            startOffset = elements.source.selectionStart || 0;
+        } else {
+            const info = getVisualCursorInfo();
+            startOffset = info.offset;
         }
-        speechOffsetStart = start;
-        text = cleanMD(elements.source.value.substring(start, end || elements.source.value.length));
+        speechOffsetStart = startOffset; 
+    } else if (isSourceMode) {
+        startOffset = elements.source.selectionStart || 0;
+        textToSpeak = elements.source.value.substring(startOffset);
+        speechOffsetStart = startOffset;
     } else {
-        text = cleanMD(currentMarkdown);
+        const info = getVisualCursorInfo();
+        startOffset = info.offset;
+        textToSpeak = info.text.substring(startOffset);
+        speechOffsetStart = startOffset;
     }
 
-    if (!text.trim()) return;
+    if (!textToSpeak.trim()) {
+        elements.status.textContent = "Please place cursor or select text.";
+        setTimeout(() => elements.status.textContent = "Ready.", 2000);
+        return;
+    }
 
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.voice = voices[elements.voiceSelect.value];
-    
+    const cleanContent = textToSpeak
+        .replace(/[#*_~`]/g, '')
+        .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+        .replace(/\|/g, ' ');
+
+    const utter = new SpeechSynthesisUtterance(cleanContent);
+    const selectedVoice = voices[elements.voiceSelect.value];
+    if (selectedVoice) utter.voice = selectedVoice;
+
     utter.onboundary = (e) => {
-        if (e.name === 'word' && isSourceMode) {
-            const word = e.utterance.text.substring(e.charIndex).match(/\w+/);
-            if (word) {
+        if (e.name === 'word') {
+            const wordMatch = e.utterance.text.substring(e.charIndex).match(/\w+/);
+            const wordLen = wordMatch ? wordMatch[0].length : 0;
+            
+            if (isSourceMode) {
                 elements.source.focus();
                 elements.source.setSelectionRange(
                     speechOffsetStart + e.charIndex, 
-                    speechOffsetStart + e.charIndex + word[0].length
+                    speechOffsetStart + e.charIndex + wordLen
                 );
+            } else {
+                highlightVisualWord(speechOffsetStart + e.charIndex, wordLen);
             }
         }
     };
 
     utter.onstart = () => setUIState(true);
-    utter.onend = () => setUIState(false);
+    utter.onend = () => {
+        setUIState(false);
+        if (!isSourceMode) window.getSelection().removeAllRanges();
+    };
+    utter.onerror = () => setUIState(false);
+    
     synth.speak(utter);
 }
 
