@@ -5,14 +5,14 @@ html, body {
 }
 
 /* Explicitly set base background for the entire page */
+html.dark, .dark body {
+    background-color: #0f172a !important; /* Deep slate-900 */
+    color: #f1f5f9; 
+}
+
 body {
     background-color: #f9fafb; /* bg-gray-50 */
     color: #1f2937; /* gray-800 */
-}
-
-.dark body {
-    background-color: #0f172a; /* bg-slate-900 */
-    color: #f1f5f9; /* slate-100 */
 }
 
 /* --- HEADER & UI ELEMENT FIXES --- */
@@ -35,9 +35,30 @@ header p.text-gray-600 { color: #4b5563; }
 }
 
 /* --- TAILWIND UTILITY OVERRIDES FOR DARK MODE --- */
-.dark .bg-gray-200 { background-color: #1e293b !important; }
-.dark .bg-blue-50 { background-color: rgba(30, 58, 138, 0.25) !important; }
-.dark .bg-gray-50 { background-color: #0f172a !important; }
+.dark .bg-gray-200 { 
+    background-color: #1e293b !important; 
+}
+
+/* Fix for Syntax Cleaning and Tracking sections in Help Modal */
+.dark .bg-blue-50 { 
+    background-color: rgba(30, 58, 138, 0.3) !important; 
+    color: #bfdbfe !important; /* Light blue text for contrast */
+}
+
+/* Explicitly fix the blue-900 subheadings in dark mode */
+.dark .text-blue-900 {
+    color: #93c5fd !important; /* Light blue (blue-300) for visibility */
+}
+
+.dark .bg-gray-50 { 
+    background-color: rgba(30, 41, 59, 0.5) !important; 
+    color: #cbd5e1 !important; /* Light slate text for contrast */
+}
+
+/* Ensure list items inside these blocks also inherit the lighter color */
+.dark .bg-blue-50 li, .dark .bg-gray-50 li {
+    color: inherit !important;
+}
 
 /* --- VIEW TOGGLE BUTTONS --- */
 #view-source, #view-visual {
