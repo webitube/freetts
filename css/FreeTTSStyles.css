@@ -205,6 +205,30 @@ header p.text-gray-600 { color: #4b5563; }
 .dark .milkdown pre { background: #0f172a; border: 1px solid #334155; color: #f8fafc !important; }
 
 /* Modals */
-.dark #help-modal .bg-white { background-color: #1e293b !important; color: #f1f5f9; }
+#help-modal .bg-white {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid #e5e7eb;
+}
+
+.dark #help-modal .bg-white { 
+    background-color: #1e293b !important; 
+    color: #f1f5f9;
+    border-color: #334155 !important;
+}
+
+/* Specific inner padding contrast for Help Modal */
+#help-modal .p-6 {
+    background-color: transparent;
+}
+
+#help-modal .p-4 {
+    border-top: 1px solid #e5e7eb;
+}
+
+.dark #help-modal .p-4 {
+    border-top-color: #334155 !important;
+    background-color: rgba(15, 23, 42, 0.3); /* Slightly darker footer for depth */
+}
+
 .dark #help-modal h2, .dark #help-modal h3 { color: #ffffff; }
 .dark #help-modal code { background-color: #0f172a; color: #f8fafc; border: 1px solid #334155; }
