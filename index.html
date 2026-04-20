@@ -24,24 +24,26 @@
 <body class="bg-gray-50 dark:bg-slate-900 transition-colors duration-300 p-4 md:p-10 font-sans text-gray-900 dark:text-slate-200 min-h-screen">
 
     <div class="max-w-4xl mx-auto">
-        <!-- HEADER SECTION -->
-        <header class="mb-6 flex flex-col xl:flex-row xl:justify-between xl:items-end gap-4">
-            <div>
-                <div class="flex items-center gap-4">
-                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">FreeTTS Markdown Editor</h1>
-                    <div class="flex items-center gap-2">
-                        <button id="help-toggle" title="Editor Guide & Markdown Help" class="text-gray-400 hover:text-blue-600 transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        </button>
-                        <button id="theme-toggle" class="p-1.5 rounded-md text-gray-400 hover:text-blue-600 transition">
-                            <svg id="theme-sun" class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                            <svg id="theme-moon" class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                        </button>
-                    </div>
+        <!-- HEADER SECTION: Forced Vertical Stack -->
+        <header class="mb-6 flex flex-col gap-4">
+            <!-- Row 1: Title and Icon Buttons -->
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">FreeTTS Markdown Editor</h1>
+                <div class="flex items-center gap-2">
+                    <button id="help-toggle" title="Editor Guide & Markdown Help" class="text-gray-400 hover:text-blue-600 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </button>
+                    <button id="theme-toggle" class="p-1.5 rounded-md text-gray-400 hover:text-blue-600 transition">
+                        <svg id="theme-sun" class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        <svg id="theme-moon" class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </button>
                 </div>
-                <p class="text-gray-600 dark:text-slate-400 text-sm">Lightweight Markdown Editor with Word-Aware TTS Tracking.</p>
             </div>
+
+            <!-- Row 2: Subtitle -->
+            <p class="text-gray-600 dark:text-slate-400 text-sm -mt-3">Lightweight Markdown Editor with Word-Aware TTS Tracking.</p>
             
+            <!-- Row 3: Control Bar -->
             <div class="flex flex-wrap items-center gap-3">
                 <select id="voice-select" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs outline-none">
                     <option value="">Loading voices...</option>
@@ -54,7 +56,7 @@
                     </button>
                 </div>
 
-                <div class="flex space-x-2 bg-gray-200 dark:bg-slate-800 p-1 rounded-lg">
+                <div class="flex space-x-2 bg-gray-200 dark:bg-slate-800 p-1 rounded-lg ml-2">
                     <button id="view-source" class="px-4 py-1.5 text-sm font-medium rounded-md bg-white dark:bg-slate-700 active-tab">Reveal Codes</button>
                     <button id="view-visual" class="px-4 py-1.5 text-sm font-medium rounded-md text-gray-600 dark:text-slate-400 hover:text-gray-900 transition">Visual</button>
                 </div>
