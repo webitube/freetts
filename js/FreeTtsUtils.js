@@ -7,7 +7,7 @@ import { listener, listenerCtx } from 'https://esm.sh/@milkdown/plugin-listener'
 import { replaceAll } from 'https://esm.sh/@milkdown/utils';
 
 // --- STATE MANAGEMENT ---
-const initialValue = `# Welcome to FreeTTS\n\nPlace your cursor anywhere and press [this link](https://google.com) to test.`;
+const initialValue = `# Welcome to FreeTTS`;
 let currentMarkdown = initialValue;
 let milkdownEditor = null;
 let isSourceMode = true; 
