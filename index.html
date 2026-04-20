@@ -171,7 +171,7 @@
         <header class="mb-6 flex flex-col xl:flex-row xl:justify-between xl:items-end gap-4">
             <div>
                 <div class="flex items-center gap-2">
-                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Native Markdown Editor</h1>
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">FreeTTS Markdown Editor</h1>
                     <button id="help-toggle" title="Editor Guide & Markdown Help" class="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     </button>
@@ -319,32 +319,7 @@
         import { listener, listenerCtx } from 'https://esm.sh/@milkdown/plugin-listener';
         import { replaceAll } from 'https://esm.sh/@milkdown/utils';
 
-        const initialValue = `# Syntax-Aware TTS
-This editor now ignores Markdown syntax during playback!
-
----
-
-**Code Block Example:**
-\`\`\`javascript
-function hello() {
-  console.log("Hello, World!");
-}
-\`\`\`
-
-**Example Table:**
-
-| Feature | Status |
-| :--- | :--- |
-| TTS Cleaning | Working |
-| Word Tracking | Enabled |
-| Visual Tables | Improved |
-
----
-
-1. Switch to **Reveal Codes**.
-2. Highlight a heading or bold text.
-3. Click Play.
-4. Notice how it only speaks the words but still highlights the syntax!`;
+        const initialValue = `# Welcome to FreeTTS Markdown Editor`;
 
         let currentMarkdown = initialValue;
         let milkdownEditor = null;
