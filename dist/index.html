@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreeTTS Markdown Editor</title>
+    <link rel="icon" href="/favicon.ico">
+    <script>
+        /** * THEME MANAGEMENT
+         * Handles system preferences and manual toggles
+         */
+        const applyTheme = () => {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        };
+        applyTheme();
+    </script>
+  <script type="module" crossorigin src="/assets/index-DnKcgrHu.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-Co-fkQwc.css">
+</head>
+<body class="bg-gray-50 dark:bg-slate-900 transition-colors duration-300 p-4 md:p-10 font-sans text-gray-900 dark:text-slate-200 min-h-screen">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- HEADER SECTION: Forced Vertical Stack -->
+        <header class="mb-6 flex flex-col gap-4">
+            <!-- Row 1: Title and Icon Buttons -->
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">FreeTTS Markdown Editor</h1>
+                <div class="flex items-center gap-2">
+                    <button id="help-toggle" title="Editor Guide & Markdown Help" class="text-gray-400 hover:text-blue-600 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </button>
+                    <button id="theme-toggle" class="p-1.5 rounded-md text-gray-400 hover:text-blue-600 transition">
+                        <svg id="theme-sun" class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                        <svg id="theme-moon" class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Row 2: Subtitle -->
+            <p class="text-gray-600 dark:text-slate-400 text-sm -mt-3">Lightweight Markdown Editor with Word-Aware TTS Tracking.</p>
+            
+            <!-- Row 3: Control Bar -->
+            <div class="flex flex-wrap items-center gap-3">
+                <select id="voice-select" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs outline-none">
+                    <option value="">Loading voices...</option>
+                </select>
+
+                <div class="flex items-center bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full px-2 py-1 shadow-sm">
+                    <button id="tts-toggle" title="Play Selection or from Cursor" class="tts-btn text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700">
+                        <svg id="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="stop-icon" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                    </button>
+                </div>
+
+                <div class="flex space-x-2 bg-gray-200 dark:bg-slate-800 p-1 rounded-lg ml-2">
+                    <button id="view-source" class="px-4 py-1.5 text-sm font-medium rounded-md bg-white dark:bg-slate-700 active-tab">Reveal Codes</button>
+                    <button id="view-visual" class="px-4 py-1.5 text-sm font-medium rounded-md text-gray-600 dark:text-slate-400 hover:text-gray-900 transition">Visual</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN EDITOR AREA -->
+        <div id="editor-container" class="shadow-sm relative source-mode">
+            <div id="app"></div>
+            <textarea id="source-editor" spellcheck="false" placeholder="Markdown source code..."></textarea>
+        </div>
+
+        <!-- FOOTER ACTIONS -->
+        <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex gap-2">
+                <button id="get-markdown" class="bg-gray-800 dark:bg-slate-700 text-white px-4 py-2 rounded text-sm flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copy
+                </button>
+                <button id="download-markdown" class="bg-blue-600 text-white px-4 py-2 rounded text-sm flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download .md
+                </button>
+            </div>
+            <div class="text-right">
+                <span id="tts-status" class="text-xs font-medium text-blue-500 block h-4"></span>
+                <span id="status-msg" class="text-xs text-gray-400">Ready.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENHANCED HELP MODAL -->
+    <div id="help-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col">
+            <div class="p-6 border-b dark:border-slate-700 flex justify-between items-center">
+                <h2 class="text-xl font-bold dark:text-white">Editor Guide & Markdown Cheatsheet</h2>
+                <button id="help-close-btn" class="text-gray-500 hover:text-black dark:hover:text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-8 overflow-y-auto">
+                <section>
+                    <h3 class="text-blue-600 dark:text-blue-400 font-bold uppercase text-xs tracking-widest mb-3">Text-to-Speech (TTS)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700 dark:text-slate-300">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                            <h4 class="font-bold mb-1 text-blue-900 dark:text-blue-300">Syntax Cleaning</h4>
+                            <p>Markdown symbols are ignored during speech to keep it natural, but we still track your position in the code exactly.</p>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                            <h4 class="font-bold mb-1 text-blue-900 dark:text-blue-300">Tracking</h4>
+                            <p>Highlight text or place your cursor. Press Play to start from that point. The editor highlights words as they are spoken.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-emerald-600 dark:text-emerald-400 font-bold uppercase text-xs tracking-widest mb-3">Markdown Basics</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+                        <div class="space-y-3">
+                            <div class="group">
+                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Headings</p>
+                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded"># Heading 1<br>## Heading 2</code>
+                            </div>
+                            <div class="group">
+                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Emphasis</p>
+                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded">**Bold** / *Italic*</code>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="group">
+                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Lists & Tasks</p>
+                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded">- Item<br>- [ ] Task</code>
+                            </div>
+                            <div class="group">
+                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Links</p>
+                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded">[Text](url)</code>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-purple-600 dark:text-purple-400 font-bold uppercase text-xs tracking-widest mb-3">Tables</h3>
+                    <div class="text-sm">
+                        <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded">
+                            | Header | Header |<br>
+                            | ------ | ------ |<br>
+                            | Cell   | Cell   |
+                        </code>
+                    </div>
+                </section>
+            </div>
+
+            <div class="p-4 border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 text-center rounded-b-xl">
+                <button id="help-close-footer" class="bg-gray-800 dark:bg-slate-700 text-white px-8 py-2 rounded-lg font-medium">Close Guide</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

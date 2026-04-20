@@ -1,0 +1,33 @@
+{
+  "dependencies": {
+    "@milkdown/core": "^7.20.0",
+    "@milkdown/plugin-history": "^7.20.0",
+    "@milkdown/plugin-listener": "^7.20.0",
+    "@milkdown/preset-commonmark": "^7.20.0",
+    "@milkdown/preset-gfm": "^7.20.0",
+    "@milkdown/theme-nord": "^7.20.0",
+    "@milkdown/utils": "^7.20.0"
+  },
+  "name": "freetts",
+  "version": "1.0.0",
+  "description": "***Free Markdown Editor with integrated Web-based TTS. Lightweight. No downloads.***",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/webitube/freetts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/webitube/freetts/issues"
+  },
+  "homepage": "https://github.com/webitube/freetts#readme",
+  "devDependencies": {
+    "vite": "^8.0.9"
+  }
+}
