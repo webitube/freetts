@@ -5,239 +5,93 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hybrid Markdown Editor with TTS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./js/FreeTtsUtils.js" defer type="module"></script>
     <script>
-        // Check for saved theme preference or default to system
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
-        }
+        /** * THEME MANAGEMENT
+         * Handles system preferences and manual toggles
+         */
+        const applyTheme = () => {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        };
+        applyTheme();
     </script>
-    <style>
-        /* Base transition for theme switching */
-        body {
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        /* Editor Container Styling */
-        #editor-container {
-            min-height: 500px;
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            padding: 2rem;
-            background: white;
-            transition: all 0.3s ease;
-        }
-
-        .dark #editor-container {
-            background: #1e293b;
-            border-color: #334155;
-        }
-
-        /* Source Mode Styling */
-        .source-mode #app {
-            display: none;
-        }
-        
-        #source-editor {
-            display: none;
-            width: 100%;
-            height: 500px;
-            font-family: 'ui-monospace', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            padding: 10px;
-            border: 1px dashed #3b82f6;
-            background: #f8fafc;
-            color: #1e293b;
-            resize: none;
-            outline: none;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        .dark #source-editor {
-            background: #0f172a;
-            color: #cbd5e1;
-            border-color: #475569;
-        }
-
-        .source-mode #source-editor {
-            display: block;
-        }
-
-        .milkdown {
-            outline: none !important;
-        }
-        
-        /* Typography - Light Mode */
-        .milkdown h1 { font-size: 2.25rem; font-weight: 800; margin-bottom: 1rem; color: #111827; }
-        .milkdown h2 { font-size: 1.5rem; font-weight: 700; margin-top: 1.5rem; color: #1f2937; }
-        .milkdown p { margin-bottom: 1rem; color: #374151; line-height: 1.6; }
-        .milkdown blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; font-style: italic; color: #6b7280; }
-        
-        /* Code Block Styling - Light Mode */
-        .milkdown pre { 
-            background: #f1f5f9; 
-            padding: 1rem; 
-            border-radius: 0.5rem; 
-            border: 1px solid #e2e8f0;
-            overflow-x: auto;
-            margin: 1.5rem 0;
-        }
-        .milkdown pre code { 
-            background: transparent; 
-            padding: 0; 
-            border-radius: 0; 
-            display: block;
-            color: #334155;
-            font-size: 0.875rem;
-        }
-        .milkdown :not(pre) > code { 
-            background: #f3f4f6; 
-            padding: 0.2rem 0.4rem; 
-            border-radius: 0.25rem; 
-            font-family: monospace; 
-            color: #eb4432;
-        }
-        
-        /* Table Styling - Light Mode */
-        .milkdown table { border-collapse: collapse; width: 100%; margin: 1.5rem 0; border: 1px solid #e5e7eb; }
-        .milkdown th { background: #f9fafb; border: 1px solid #e5e7eb; padding: 0.75rem; text-align: left; font-weight: 600; }
-        .milkdown td { border: 1px solid #e5e7eb; padding: 0.75rem; }
-        .milkdown tr:nth-child(even) { background-color: #fcfcfd; }
-
-        /* Typography & Tables - Dark Mode */
-        .dark .milkdown h1 { color: #f8fafc; }
-        .dark .milkdown h2 { color: #f1f5f9; }
-        .dark .milkdown p { color: #cbd5e1; }
-        .dark .milkdown blockquote { color: #94a3b8; border-color: #60a5fa; }
-        
-        .dark .milkdown pre { 
-            background: #0f172a; 
-            border-color: #334155; 
-        }
-        .dark .milkdown pre code { 
-            color: #e2e2e8f0; 
-        }
-        .dark .milkdown :not(pre) > code { 
-            background: #334155; 
-            color: #fca5a5; 
-        }
-        
-        .dark .milkdown table { border-color: #334155; }
-        .dark .milkdown th { background: #1e293b; border-color: #334155; color: #f1f5f9; }
-        .dark .milkdown td { border-color: #334155; color: #cbd5e1; }
-        .dark .milkdown tr:nth-child(even) { background-color: #1e293b44; }
-
-        .active-tab {
-            border-bottom: 2px solid #3b82f6;
-            color: #3b82f6;
-        }
-
-        .dark .active-tab {
-            color: #60a5fa;
-            border-color: #60a5fa;
-        }
-
-        /* TTS Toolbar Styling */
-        .tts-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.5rem;
-            border-radius: 9999px;
-            transition: all 0.2s;
-        }
-        
-        #voice-select {
-            max-width: 150px;
-            text-overflow: ellipsis;
-        }
-
-        /* Modal Transitions */
-        #help-modal {
-            transition: opacity 0.2s ease, visibility 0.2s ease;
-        }
-        #help-modal.hidden {
-            opacity: 0;
-            visibility: hidden;
-            display: flex; 
-        }
-    </style>
+    <link rel="stylesheet" href="./css/FreeTTSStyles.css">
 </head>
 <body class="bg-gray-50 dark:bg-slate-900 p-4 md:p-10 font-sans text-gray-900 dark:text-slate-200">
 
     <div class="max-w-4xl mx-auto">
+        <!-- HEADER SECTION -->
         <header class="mb-6 flex flex-col xl:flex-row xl:justify-between xl:items-end gap-4">
             <div>
                 <div class="flex items-center gap-4">
                     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">FreeTTS Markdown Editor</h1>
                     <div class="flex items-center gap-2">
-                        <!-- Theme Toggle moved next to Help -->
-                        <button id="help-toggle" title="Editor Guide & Markdown Help" class="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                        <button id="help-toggle" title="Editor Guide & Markdown Help" class="text-gray-400 hover:text-blue-600 transition">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                         </button>
-                        <button id="theme-toggle" class="p-1.5 rounded-md text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition" title="Toggle Theme">
-                            <svg id="theme-sun" class="hidden dark:block" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-                            <svg id="theme-moon" class="block dark:hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        <button id="theme-toggle" class="p-1.5 rounded-md text-gray-400 hover:text-blue-600 transition">
+                            <svg id="theme-sun" class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                            <svg id="theme-moon" class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                         </button>
                     </div>
                 </div>
-                <p class="text-gray-600 dark:text-slate-400">Free Markdown Editor with integrated Web-based TTS. Lightweight. No downloads.</p>
+                <p class="text-gray-600 dark:text-slate-400 text-sm">Lightweight Markdown Editor with Word-Aware TTS Tracking.</p>
             </div>
             
             <div class="flex flex-wrap items-center gap-3">
-                <!-- TTS Voice Selector -->
-                <select id="voice-select" class="bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs shadow-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <select id="voice-select" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs outline-none">
                     <option value="">Loading voices...</option>
                 </select>
 
-                <!-- Consolidated TTS Toggle Control -->
                 <div class="flex items-center bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full px-2 py-1 shadow-sm">
-                    <button id="tts-toggle" title="Play Selection or from Cursor" class="tts-btn text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700">
-                        <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        <svg id="stop-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+                    <button id="tts-toggle" title="Play Selection or from Cursor" class="tts-btn text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700">
+                        <svg id="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="stop-icon" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
                     </button>
                 </div>
 
-                <!-- Tab Group -->
                 <div class="flex space-x-2 bg-gray-200 dark:bg-slate-800 p-1 rounded-lg">
-                    <button id="view-source" class="px-4 py-1.5 text-sm font-medium rounded-md bg-white dark:bg-slate-700 shadow-sm active-tab">Reveal Codes</button>
-                    <button id="view-visual" class="px-4 py-1.5 text-sm font-medium rounded-md text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition">Visual</button>
+                    <button id="view-source" class="px-4 py-1.5 text-sm font-medium rounded-md bg-white dark:bg-slate-700 active-tab">Reveal Codes</button>
+                    <button id="view-visual" class="px-4 py-1.5 text-sm font-medium rounded-md text-gray-600 dark:text-slate-400 hover:text-gray-900 transition">Visual</button>
                 </div>
             </div>
         </header>
 
-        <!-- The Editor Mount Point -->
+        <!-- MAIN EDITOR AREA -->
         <div id="editor-container" class="shadow-sm relative source-mode">
             <div id="app"></div>
             <textarea id="source-editor" spellcheck="false" placeholder="Markdown source code..."></textarea>
         </div>
 
+        <!-- FOOTER ACTIONS -->
         <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex gap-2">
-                <button id="get-markdown" class="bg-gray-800 hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-4 py-2 rounded shadow transition text-sm flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <button id="get-markdown" class="bg-gray-800 dark:bg-slate-700 text-white px-4 py-2 rounded text-sm flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                     Copy
                 </button>
-                <button id="download-markdown" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow transition text-sm flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <button id="download-markdown" class="bg-blue-600 text-white px-4 py-2 rounded text-sm flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Download .md
                 </button>
             </div>
-            <div class="flex flex-col items-end">
-                <span id="tts-status" class="text-xs font-medium text-blue-500 dark:text-blue-400 mb-1 h-4 text-right"></span>
-                <span id="status-msg" class="text-xs text-gray-400 dark:text-slate-500">Ready.</span>
+            <div class="text-right">
+                <span id="tts-status" class="text-xs font-medium text-blue-500 block h-4"></span>
+                <span id="status-msg" class="text-xs text-gray-400">Ready.</span>
             </div>
         </div>
     </div>
 
-    <!-- Enhanced Help Modal -->
-    <div id="help-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <!-- ENHANCED HELP MODAL -->
+    <div id="help-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col">
-            <div class="p-6 border-b dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800 rounded-t-xl">
+            <div class="p-6 border-b dark:border-slate-700 flex justify-between items-center">
                 <h2 class="text-xl font-bold dark:text-white">Editor Guide & Markdown Cheatsheet</h2>
-                <button id="help-close" class="text-gray-500 hover:text-black dark:hover:text-white">
+                <button id="help-close-btn" class="text-gray-500 hover:text-black dark:hover:text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
@@ -263,29 +117,21 @@
                         <div class="space-y-3">
                             <div class="group">
                                 <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Headings</p>
-                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded dark:text-slate-200"># Heading 1<br>## Heading 2<br>### Heading 3</code>
+                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded"># Heading 1<br>## Heading 2</code>
                             </div>
                             <div class="group">
                                 <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Emphasis</p>
-                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded dark:text-slate-200">**Bold Text**<br>*Italic Text*<br>~~Strikethrough~~</code>
-                            </div>
-                            <div class="group">
-                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Lists</p>
-                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded dark:text-slate-200">- Unordered Item<br>1. Ordered Item<br>- [ ] Task List Item</code>
+                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded">**Bold** / *Italic*</code>
                             </div>
                         </div>
                         <div class="space-y-3">
                             <div class="group">
-                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Links & Images</p>
-                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded dark:text-slate-200">[Link Text](url)<br>![Alt Text](img_url)</code>
+                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Lists & Tasks</p>
+                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded">- Item<br>- [ ] Task</code>
                             </div>
                             <div class="group">
-                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Code</p>
-                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded dark:text-slate-200">\`Inline Code\`<br>```<br>Code Block<br>```</code>
-                            </div>
-                            <div class="group">
-                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Misc</p>
-                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded dark:text-slate-200">> Blockquote<br>--- (Horizontal Rule)</code>
+                                <p class="text-gray-500 dark:text-slate-400 mb-1 text-xs">Links</p>
+                                <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded">[Text](url)</code>
                             </div>
                         </div>
                     </div>
@@ -294,7 +140,7 @@
                 <section>
                     <h3 class="text-purple-600 dark:text-purple-400 font-bold uppercase text-xs tracking-widest mb-3">Tables</h3>
                     <div class="text-sm">
-                        <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded dark:text-slate-200">
+                        <code class="block bg-gray-100 dark:bg-slate-700 p-2 rounded">
                             | Header | Header |<br>
                             | ------ | ------ |<br>
                             | Cell   | Cell   |
@@ -304,254 +150,10 @@
             </div>
 
             <div class="p-4 border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 text-center rounded-b-xl">
-                <button id="help-close-btn" class="bg-gray-800 dark:bg-slate-700 text-white px-8 py-2 rounded-lg font-medium hover:bg-black dark:hover:bg-slate-600 transition">Close Guide</button>
+                <button id="help-close-footer" class="bg-gray-800 dark:bg-slate-700 text-white px-8 py-2 rounded-lg font-medium">Close Guide</button>
             </div>
         </div>
     </div>
 
-    <script type="module">
-        import { Editor, rootCtx, defaultValueCtx } from 'https://esm.sh/@milkdown/core';
-        import { nord } from 'https://esm.sh/@milkdown/theme-nord';
-        import { commonmark } from 'https://esm.sh/@milkdown/preset-commonmark';
-        import { gfm } from 'https://esm.sh/@milkdown/preset-gfm';
-        import { history } from 'https://esm.sh/@milkdown/plugin-history';
-        import { listener, listenerCtx } from 'https://esm.sh/@milkdown/plugin-listener';
-        import { replaceAll } from 'https://esm.sh/@milkdown/utils';
-
-        const initialValue = `# Welcome to FreeTTS Markdown Editor`;
-
-        let currentMarkdown = initialValue;
-        let milkdownEditor = null;
-        let isSourceMode = true; 
-
-        const container = document.getElementById('editor-container');
-        const sourceEditor = document.getElementById('source-editor');
-        const btnVisual = document.getElementById('view-visual');
-        const btnSource = document.getElementById('view-source');
-        const themeToggle = document.getElementById('theme-toggle');
-
-        const helpToggle = document.getElementById('help-toggle');
-        const helpModal = document.getElementById('help-modal');
-        const helpClose = document.getElementById('help-close');
-        const helpCloseBtn = document.getElementById('help-close-btn');
-
-        const btnTtsToggle = document.getElementById('tts-toggle');
-        const playIcon = document.getElementById('play-icon');
-        const stopIcon = document.getElementById('stop-icon');
-        const ttsStatus = document.getElementById('tts-status');
-        const voiceSelect = document.getElementById('voice-select');
-
-        const synth = window.speechSynthesis;
-        let voices = [];
-        let currentUtterance = null;
-        let isSpeaking = false;
-        let speechOffsetStart = 0;
-
-        themeToggle.addEventListener('click', () => {
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.theme = isDark ? 'dark' : 'light';
-        });
-
-        const toggleModal = () => helpModal.classList.toggle('hidden');
-        helpToggle.onclick = toggleModal;
-        helpClose.onclick = toggleModal;
-        helpCloseBtn.onclick = toggleModal;
-        helpModal.onclick = (e) => { if(e.target === helpModal) toggleModal(); };
-
-        function populateVoiceList() {
-            voices = synth.getVoices();
-            if (voices.length === 0) return;
-            voiceSelect.innerHTML = '';
-            voices.forEach((voice, i) => {
-                const option = document.createElement('option');
-                option.textContent = `${voice.name} (${voice.lang})`;
-                if (voice.default) option.textContent += ' [Default]';
-                option.value = i;
-                voiceSelect.appendChild(option);
-            });
-            document.getElementById('status-msg').textContent = `${voices.length} voices ready.`;
-        }
-
-        populateVoiceList();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = populateVoiceList;
-        }
-
-        function cleanMarkdownForSpeech(text) {
-            // Refined pattern to aggressively strip structural Markdown lines (tables, HRs)
-            const patterns = [
-                /^[\s|]*[:\-|\s]+[\s|]*$/gm, // Structural lines with any combo of | - : and space
-                /^#+\s/gm,                  // Headings
-                /\*\*/g,                    // Bold
-                /__/g,                     // Bold underscores
-                /\*\//g,                    // End italics
-                /_/g,                       // Italics
-                /~~/g,                      // Strikethrough
-                /`{1,3}/g,                  // Code indicators
-                /^>\s/gm,                   // Blockquotes
-                /\[/g, /\]/g,               // Links
-                /\(http[^)]+\)/g,           // URL targets
-                /^-\s\[[x\s]\]\s/gm,        // Task lists
-                /\|/g                       // Lone table pipes
-            ];
-            let cleaned = text;
-            patterns.forEach(p => {
-                cleaned = cleaned.replace(p, match => ' '.repeat(match.length));
-            });
-            return cleaned;
-        }
-
-        async function createEditor() {
-            milkdownEditor = await Editor.make()
-                .config((ctx) => {
-                    ctx.set(rootCtx, '#app');
-                    ctx.set(defaultValueCtx, initialValue);
-                    const inst = ctx.get(listenerCtx);
-                    inst.markdownUpdated((ctx, markdown) => {
-                        currentMarkdown = markdown;
-                        if (!isSourceMode) sourceEditor.value = markdown;
-                    });
-                })
-                .use(nord).use(commonmark).use(gfm).use(history).use(listener)
-                .create();
-            sourceEditor.value = initialValue;
-            
-            if (isSourceMode) {
-                sourceEditor.focus();
-                sourceEditor.setSelectionRange(0, 0);
-            }
-        }
-
-        window.onload = createEditor;
-
-        btnVisual.addEventListener('click', () => {
-            if (!isSourceMode) return;
-            isSourceMode = false;
-            milkdownEditor.action(replaceAll(sourceEditor.value));
-            container.classList.remove('source-mode');
-            btnVisual.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'active-tab');
-            btnVisual.classList.remove('text-gray-600', 'dark:text-slate-400');
-            btnSource.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'active-tab');
-            btnSource.classList.add('text-gray-600', 'dark:text-slate-400');
-        });
-
-        btnSource.addEventListener('click', () => {
-            if (isSourceMode) return;
-            isSourceMode = true;
-            container.classList.add('source-mode');
-            btnSource.classList.add('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'active-tab');
-            btnSource.classList.remove('text-gray-600', 'dark:text-slate-400');
-            btnVisual.classList.remove('bg-white', 'dark:bg-slate-700', 'shadow-sm', 'active-tab');
-            btnVisual.classList.add('text-gray-600', 'dark:text-slate-400');
-            sourceEditor.focus();
-        });
-
-        function setPlaybackUI(active) {
-            isSpeaking = active;
-            if (active) {
-                playIcon.classList.add('hidden');
-                stopIcon.classList.remove('hidden');
-                btnTtsToggle.classList.replace('text-blue-600', 'text-red-600');
-                btnTtsToggle.title = "Stop";
-            } else {
-                playIcon.classList.remove('hidden');
-                stopIcon.classList.add('hidden');
-                btnTtsToggle.classList.replace('text-red-600', 'text-blue-600');
-                btnTtsToggle.title = "Play Selection or Cursor";
-                ttsStatus.textContent = "";
-                
-                if (isSourceMode) {
-                    const currentPos = sourceEditor.selectionEnd;
-                    sourceEditor.setSelectionRange(currentPos, currentPos);
-                    sourceEditor.focus();
-                }
-            }
-        }
-
-        function getSpeechContent() {
-            speechOffsetStart = 0;
-            let rawText = "";
-            if (isSourceMode) {
-                const start = sourceEditor.selectionStart;
-                const end = sourceEditor.selectionEnd;
-                if (start !== end) {
-                    speechOffsetStart = start;
-                    rawText = sourceEditor.value.substring(start, end);
-                } else {
-                    speechOffsetStart = start;
-                    rawText = sourceEditor.value.substring(start);
-                }
-                return cleanMarkdownForSpeech(rawText);
-            } else {
-                const selection = window.getSelection();
-                if (!selection.isCollapsed) {
-                    speechOffsetStart = -1; 
-                    return selection.toString();
-                } else {
-                    return currentMarkdown;
-                }
-            }
-        }
-
-        btnTtsToggle.addEventListener('click', () => {
-            if (isSpeaking || synth.speaking) {
-                synth.cancel();
-                setPlaybackUI(false);
-                return;
-            }
-            const text = getSpeechContent();
-            if (!text || text.trim().length === 0) return;
-            synth.cancel();
-            currentUtterance = new SpeechSynthesisUtterance(text);
-            const selectedVoiceIndex = voiceSelect.value;
-            if (selectedVoiceIndex !== "") currentUtterance.voice = voices[selectedVoiceIndex];
-            currentUtterance.onboundary = (event) => {
-                if (event.name === 'word') {
-                    const charIndex = event.charIndex;
-                    const wordMatch = event.utterance.text.substring(charIndex).match(/\w+/);
-                    const word = wordMatch ? wordMatch[0] : "";
-                    if (isSourceMode && speechOffsetStart !== -1 && word) {
-                        sourceEditor.focus();
-                        sourceEditor.setSelectionRange(speechOffsetStart + charIndex, speechOffsetStart + charIndex + word.length);
-                    }
-                }
-            };
-            currentUtterance.onstart = () => setPlaybackUI(true);
-            currentUtterance.onend = () => setPlaybackUI(false);
-            currentUtterance.onerror = () => setPlaybackUI(false);
-            synth.speak(currentUtterance);
-        });
-
-        document.getElementById('get-markdown').addEventListener('click', () => {
-            const textToCopy = isSourceMode ? sourceEditor.value : currentMarkdown;
-            const el = document.createElement('textarea');
-            el.value = textToCopy;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-            const status = document.getElementById('status-msg');
-            status.textContent = "Copied!";
-            setTimeout(() => status.textContent = "Ready.", 2000);
-        });
-
-        document.getElementById('download-markdown').addEventListener('click', () => {
-            const textToSave = isSourceMode ? sourceEditor.value : currentMarkdown;
-            const blob = new Blob([textToSave], { type: 'text/markdown' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const h1Match = textToSave.match(/^#\s+(.+)$/m);
-            const fileName = h1Match ? h1Match[1].trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'document';
-            a.href = url;
-            a.download = `${fileName}.md`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            const status = document.getElementById('status-msg');
-            status.textContent = "Downloaded!";
-            setTimeout(() => status.textContent = "Ready.", 2000);
-        });
-    </script>
 </body>
 </html>
