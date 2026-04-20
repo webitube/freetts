@@ -49,3 +49,6 @@ The editor supports GitHub Flavored Markdown (GFM), including:
 * Strike-through \~\~text\~\~  
 * Code blocks with syntax highlighting placeholders  
 * Blockquotes and nested lists
+
+## **Screenshot**
+![Screenshot](images/FreeTTSMarkdownEditor.png)
