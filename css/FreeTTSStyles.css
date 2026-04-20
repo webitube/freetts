@@ -1,5 +1,17 @@
 /* --- UI TRANSITIONS --- */
-body { transition: background-color 0.3s ease, color 0.3s ease; }
+html, body { 
+    transition: background-color 0.3s ease, color 0.3s ease; 
+    min-height: 100vh;
+}
+
+/* Explicitly set base background for the entire page to ensure dark mode coverage */
+body {
+    background-color: #f9fafb; /* bg-gray-50 */
+}
+
+.dark body {
+    background-color: #0f172a; /* bg-slate-900 */
+}
 
 /* --- EDITOR LAYOUT --- */
 #editor-container {
@@ -63,12 +75,12 @@ body { transition: background-color 0.3s ease, color 0.3s ease; }
     color: #93c5fd;
 }
 
-/* Inline Code Styling - Matched to Code Blocks */
+/* Inline Code Styling */
 .milkdown :not(pre) > code {
     font-family: 'ui-monospace', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
     font-size: 0.875em;
     background-color: #f1f5f9;
-    color: inherit; 
+    color: #1e293b; 
     padding: 0.2em 0.4em;
     border-radius: 0.375rem;
     border: 1px solid transparent;
@@ -81,90 +93,111 @@ body { transition: background-color 0.3s ease, color 0.3s ease; }
     color: #cbd5e1;
 }
 
-/* FIX: Restore Lists & Multi-level Tokens (Tailwind reset fix) */
-.milkdown ul, .milkdown ol { 
-    padding-left: 1.5rem; 
-    margin-bottom: 1rem; 
-    margin-top: 0.25rem;
+/* --- LISTS RESTORATION (UP TO DEPTH 5) --- */
+.milkdown ul, .milkdown ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem !important;
 }
 
-/* Unordered List Tokens by Level (5 Levels) */
-.milkdown ul { list-style-type: disc; }
-.milkdown ul ul { list-style-type: circle; }
-.milkdown ul ul ul { list-style-type: square; }
-.milkdown ul ul ul ul { list-style-type: '◦ '; } 
-.milkdown ul ul ul ul ul { list-style-type: '▪ '; } 
-
-/* Ordered List Tokens by Level (5 Levels) */
-.milkdown ol { list-style-type: decimal; }
-.milkdown ol ol { list-style-type: lower-alpha; }
-.milkdown ol ol ol { list-style-type: lower-roman; }
-.milkdown ol ol ol ol { list-style-type: upper-alpha; }
-.milkdown ol ol ol ol ol { list-style-type: upper-roman; }
-
-.milkdown li { 
-    margin-bottom: 0.25rem; 
+.milkdown li {
+    display: list-item !important;
+    margin-bottom: 0.25rem;
 }
-.milkdown li p {
-    margin-bottom: 0; 
+
+/* Marker (Bullet/Number) Contrast Fix */
+.milkdown li::marker {
+    color: #374151; /* Match light mode p color */
 }
+
+.dark .milkdown li::marker {
+    color: #cbd5e1; /* Match dark mode p color */
+}
+
+/* Unordered List Bullets */
+.milkdown ul { list-style-type: disc !important; }
+.milkdown ul ul { list-style-type: circle !important; }
+.milkdown ul ul ul { list-style-type: square !important; }
+.milkdown ul ul ul ul { list-style-type: disc !important; }
+.milkdown ul ul ul ul ul { list-style-type: circle !important; }
+
+/* Ordered List Numbering */
+.milkdown ol { list-style-type: decimal !important; }
+.milkdown ol ol { list-style-type: lower-alpha !important; }
+.milkdown ol ol ol { list-style-type: lower-roman !important; }
+.milkdown ol ol ol ol { list-style-type: upper-alpha !important; }
+.milkdown ol ol ol ol ol { list-style-type: upper-roman !important; }
+
+/* Ensure paragraphs inside list items don't add massive bottom margins */
+.milkdown li p { margin-bottom: 0.25rem !important; color: inherit; }
 
 .milkdown blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; font-style: italic; color: #6b7280; margin: 1.5rem 0; }
-.milkdown pre { background: #f1f5f9; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin: 1.5rem 0; }
 
+/* CODE BLOCKS FIX: Contrast for Dark Mode */
+.milkdown pre { 
+    background: #f1f5f9; 
+    padding: 1rem; 
+    border-radius: 0.5rem; 
+    overflow-x: auto; 
+    margin: 1.5rem 0; 
+    color: #1e293b; 
+}
+
+.dark .milkdown pre { 
+    background: #0f172a; 
+    border: 1px solid #334155; 
+    color: #f8fafc !important; /* Force high contrast white text in dark code blocks */
+}
+
+/* DARK MODE COLOR OVERRIDES */
 .dark .milkdown h1, .dark .milkdown h2, .dark .milkdown h3, .dark .milkdown h4, .dark .milkdown h5 { color: #f8fafc; }
 .dark .milkdown h6 { color: #94a3b8; }
 .dark .milkdown p { color: #cbd5e1; }
-.dark .milkdown pre { background: #0f172a; border: 1px solid #334155; }
 
 /* --- TABLE STYLING --- */
 .milkdown table { 
     border-collapse: collapse; 
     width: 100%; 
     margin: 1.5rem 0; 
-    border: 1px solid #e5e7eb;
-    overflow: hidden;
-    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.4rem;
 }
 .milkdown th, .milkdown td { 
-    border: 1px solid #e5e7eb; 
+    border: 1px solid #d1d5db; 
     padding: 0.75rem; 
     text-align: left; 
 }
 
-/* Header Specific Callout */
-.milkdown th { 
-    background: #334155; /* Slate-700 */
-    color: #ffffff; 
-    font-weight: 700;
+/* Specific Header Row Text Style */
+.milkdown th, 
+.milkdown th p, 
+.milkdown th * { 
+    color: #ffffff !important;      /* Stark white for light mode */
+    background: #1e293b !important; /* Dark background for light mode headers */
+    font-weight: 700 !important;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
-    border-color: #475569;
 }
 
 .dark .milkdown table { border-color: #334155; }
 .dark .milkdown td { border-color: #334155; }
 
-.dark .milkdown th { 
-    background: #0f172a; /* Slate-900 */
-    color: #f1f5f9;
+.dark .milkdown th, 
+.dark .milkdown th p, 
+.dark .milkdown th * { 
+    background: #0f172a !important; /* Deeper background for dark mode headers */
+    color: #60a5fa !important;      /* Bright blue for dark mode headers */
     border-color: #1e293b;
 }
 
-/* Zebra Striping for Readability */
-.milkdown tr:nth-child(even) {
-    background-color: #f8fafc;
-}
-.dark .milkdown tr:nth-child(even) {
-    background-color: #1e293b80;
-}
+/* Zebra Striping */
+.milkdown tr:nth-child(even) { background-color: #f8fafc; }
+.dark .milkdown tr:nth-child(even) { background-color: #1e293b40; }
 
 /* --- INTERACTIVE ELEMENTS --- */
 .active-tab { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
 .dark .active-tab { color: #60a5fa; border-color: #60a5fa; }
 .tts-btn { display: flex; align-items: center; justify-content: center; padding: 0.5rem; border-radius: 9999px; transition: all 0.2s; }
-#voice-select { max-width: 150px; text-overflow: ellipsis; }
 
 /* --- MODALS --- */
 #help-modal { transition: opacity 0.2s ease, visibility 0.2s ease; }

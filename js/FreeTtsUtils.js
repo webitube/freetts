@@ -29,11 +29,20 @@ const elements = {
     helpToggle: document.getElementById('help-toggle'),
     helpModal: document.getElementById('help-modal'),
     helpCloseBtn: document.getElementById('help-close-btn'),
-    helpCloseFooter: document.getElementById('help-close-footer')
+    helpCloseFooter: document.getElementById('help-close-footer'),
+    themeToggle: document.getElementById('theme-toggle')
 };
 
 // Initialize source value
 elements.source.value = initialValue;
+
+// --- THEME MANAGEMENT ---
+if (elements.themeToggle) {
+    elements.themeToggle.onclick = () => {
+        const isDark = document.documentElement.classList.toggle('dark');
+        localStorage.theme = isDark ? 'dark' : 'light';
+    };
+}
 
 // --- LINK INTERCEPTOR ---
 elements.visual.addEventListener('click', (e) => {
@@ -135,7 +144,6 @@ function highlightVisualWord(startOffset, wordLength) {
     let endNode = null;
     let endCharIndex = 0;
 
-    // Traverse text nodes to find start and end positions
     const walker = document.createTreeWalker(elements.visual, NodeFilter.SHOW_TEXT, null, false);
     let node;
     while (node = walker.nextNode()) {
@@ -162,9 +170,6 @@ function highlightVisualWord(startOffset, wordLength) {
     }
 }
 
-/**
- * Gets the character offset of the current cursor position in visual editor.
- */
 function getVisualCursorInfo() {
     const selection = window.getSelection();
     if (!selection.rangeCount) return { text: elements.visual.innerText, offset: 0 };
@@ -193,7 +198,6 @@ function togglePlayback() {
 
     if (selectionText) {
         textToSpeak = selectionText;
-        // Calculate the absolute starting point of the selection for correct highlighting
         if (isSourceMode) {
             startOffset = elements.source.selectionStart || 0;
         } else {
