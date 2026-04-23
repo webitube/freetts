@@ -55,3 +55,7 @@ Managed via simple module-level variables — no framework state management. Key
 ### Deployment
 
 GitHub Pages serves from the `dist/` folder via the `/freetts_dist/` base path. The `vite.config.js` sets this base so asset paths resolve correctly after build.
+
+## DevOps
+
+Detailed build, deployment, and CI/CD instructions are documented in [DEVOPS.md](./DEVOPS.md).

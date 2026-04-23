@@ -52,3 +52,7 @@ The editor supports GitHub Flavored Markdown (GFM), including:
 
 ## **Screenshot**
 ![Screenshot](images/FreeTTSMarkdownEditor.png)
+
+## **Development**
+
+For development, build, and deployment instructions, see [CLAUDE.md](./CLAUDE.md) and [DEVOPS.md](./DEVOPS.md).
