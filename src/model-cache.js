@@ -1,3 +1,5 @@
+import { debug, debugLog, debugShowArrayBuffer } from './config.js';
+
 class ModelCache {
     constructor() {
         this.dbName = 'kitten-tts-cache';
@@ -15,7 +17,9 @@ class ModelCache {
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
                 if (!db.objectStoreNames.contains(this.storeName)) {
-                    const store = db.createObjectStore(this.storeName, { keyPath: 'url' });
+                    const storeName = this.storeName;
+                    const store = db.createObjectStore(storeName, { keyPath: 'url' });
+                    debugLog(`storeName=${storeName}`, "ModelCache.init()")
                     store.createIndex('timestamp', 'timestamp', { unique: false });
                 }
             };
@@ -45,6 +49,7 @@ class ModelCache {
     }
 
     async set(url, data) {
+        debugLog(`url=${url}, data.byteLength=${data.byteLength}`, "model-cache.set()");
         await this.init();
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction([this.storeName], 'readwrite');
@@ -68,12 +73,27 @@ class ModelCache {
 }
 
 export async function cachedFetch(url) {
+    const fnName = "cachedFetch";
+    debugLog(`debugTts=${debug}`, fnName);
     const cache = new ModelCache();
+    debugLog(`1: cachedFetch url: ${url}`, fnName);
     const cachedData = await cache.get(url);
-    if (cachedData) return new Response(cachedData);
+    debugLog(`2: cachedFetch cacheData: ${cachedData}`, fnName);
+    if (cachedData)
+    {
+        debugShowArrayBuffer(cachedData, `${fnName}: ${url}`);
+        return new Response(cachedData);
+    }
+    debugLog(`3: cachedFetch url: ${url}`, fnName);
 
     const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP error ${response.status} fetching ${url}`);
+    debugLog(`4: cachedFetch url: ${url}, response.ok=${response.ok}, status=${response.status}, type=${response.type}, statusText=${response.statusText}, header=${response.headers}`, fnName);
+
+    if (!response.ok)
+    {
+        debugLog(`5: cachedFetch: FAILED url: ${url}`, fnName);
+        throw new Error(`HTTP error ${response.status} fetching ${url}`);
+    }
 
     const data = await response.arrayBuffer();
     await cache.set(url, data);

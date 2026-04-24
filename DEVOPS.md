@@ -63,7 +63,7 @@ npx vite build
 This command:
 - Bundles and minifies JavaScript (where applicable)
 - Copies all static assets (images, icons, CSS) to the `dist/` folder
-- Applies the **base path** configured in `vite.config.js` (`/freetts_dist/` for GitHub Pages)
+- Applies the **base path** configured in `vite.config.js` (`/dist/` for GitHub Pages)
 - Generates an `index.html` that references the built assets
 
 The output directory `dist/` contains everything needed to serve the application as a static site.
@@ -82,7 +82,7 @@ The build is controlled by `vite.config.js`:
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-    base: '/freetts_dist/',
+    base: '/dist/',
     optimizeDeps: {
         exclude: ['onnxruntime-web', 'phonemizer'],
     },
@@ -170,7 +170,7 @@ Create a CI/CD pipeline that builds and deploys the site on every push to the `m
            with:
              github_token: ${{ secrets.GITHUB_TOKEN }}
              publish_dir: ./dist
-             # Optional: set a custom base path if different from '/freetts_dist/'
+             # Optional: set a custom base path if different from '/dist/'
              # cname: example.com
    ```
 

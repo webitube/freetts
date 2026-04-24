@@ -29,5 +29,5 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          # Optional: set a custom base path if different from '/freetts_dist/'
+          # Optional: set a custom base path if different from '/dist/'
           # cname: example.com

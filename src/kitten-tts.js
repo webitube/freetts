@@ -1,5 +1,6 @@
 import { cleanTextForTTS, chunkText } from './text-cleaner.js';
 import { cachedFetch } from './model-cache.js';
+import { debug, debugLog, debugShowArrayBuffer } from './config.js';
 
 export class TextSplitterStream {
     constructor() {
@@ -80,6 +81,7 @@ export class KittenTTS {
             // Single-threaded WASM — no SharedArrayBuffer/COOP requirement (works on GitHub Pages)
             ort.env.wasm.numThreads = 1;
 
+            debugLog(`modelPath: ${modelPath}`, "kitten-tts.from_pretrained(): ");
             const modelResponse = await cachedFetch(modelPath);
             const modelBuffer = await modelResponse.arrayBuffer();
 

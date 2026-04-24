@@ -1,7 +1,11 @@
 import { KittenTTS, TextSplitterStream } from './kitten-tts.js';
 
-const MODEL_CDN = 'https://cdn.jsdelivr.net/gh/clowerweb/kitten-tts-web-demo@main/public/tts-model/';
-const MODEL_PATH = `${MODEL_CDN}model_quantized.onnx`;
+//const MODEL_CDN = 'https://cdn.jsdelivr.net/gh/clowerweb/kitten-tts-web-demo@main/public/tts-model/';
+
+// Note: jsdelivr.net policy is that single files have a 20 MB max. file size to qualify for hosting and a limit
+//       of 150 MB for total package size.
+const MODEL_CDN = `${import.meta.env.BASE_URL}models/`
+const MODEL_PATH = `${MODEL_CDN}kitten_tts_nano_v0_8.onnx`;
 
 let tts = null;
 let device = 'wasm';

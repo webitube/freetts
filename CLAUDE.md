@@ -15,7 +15,7 @@ npx vite build
 npx vite preview
 ```
 
-The base path in `vite.config.js` is set to `/freetts_dist/` for GitHub Pages deployment. Change this if deploying elsewhere.
+The base path in `vite.config.js` is set to `/dist/` for GitHub Pages deployment. Change this if deploying elsewhere.
 
 ## Architecture
 
@@ -54,7 +54,7 @@ Managed via simple module-level variables — no framework state management. Key
 
 ### Deployment
 
-GitHub Pages serves from the `dist/` folder via the `/freetts_dist/` base path. The `vite.config.js` sets this base so asset paths resolve correctly after build.
+GitHub Pages serves from the `dist/` folder via the `/dist/` base path. The `vite.config.js` sets this base so asset paths resolve correctly after build.
 
 ## DevOps
 
