@@ -21,7 +21,7 @@ The base path in `vite.config.js` is set to `/freetts/` for GitHub Pages deploym
 
 FreeTTS is a vanilla JavaScript single-page app with no frontend framework. Application code lives in three files:
 
-- **`FreeTtsUtils.js`** (~400 lines) — app orchestration: editor init, mode switching, TTS playback coordination, theme management
+- **`src/FreeTtsUtils.js`** (~400 lines) — app orchestration: editor init, mode switching, TTS playback coordination, theme management
 - **`src/kokoro-player.js`** (~340 lines) — chunk-based audio player class (`KokoroPlayer`) for the Kokoro TTS engine
 - **`src/tts-worker.js`** — Web Worker that runs `kokoro-js` (ONNX Runtime) to generate audio off the main thread
 
@@ -61,7 +61,7 @@ The app supports two TTS engines, selected via dropdown:
 
 ### State
 
-Managed via simple module-level variables in `FreeTtsUtils.js` — no framework state management. Key globals:
+Managed via simple module-level variables in `src/FreeTtsUtils.js` — no framework state management. Key globals:
 - `currentMarkdown`, `milkdownEditor`, `isSourceMode`
 - `isSpeaking`, `activeEngine` (`'webspeech'` | `'kokoro'`)
 - `kokoroPlayer` (KokoroPlayer instance), `kokoroTextToSpeak`, `kokoroStartOffset`

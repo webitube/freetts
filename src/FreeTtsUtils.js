@@ -5,7 +5,7 @@ import { gfm } from '@milkdown/preset-gfm';
 import { history } from '@milkdown/plugin-history';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { replaceAll } from '@milkdown/utils';
-import { KokoroPlayer } from './src/kokoro-player.js';
+import { KokoroPlayer } from './kokoro-player.js';
 
 // --- STATE ---
 const initialValue = `# Welcome to FreeTTS`;
