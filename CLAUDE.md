@@ -19,32 +19,53 @@ The base path in `vite.config.js` is set to `/dist/` for GitHub Pages deployment
 
 ## Architecture
 
-FreeTTS is a vanilla JavaScript single-page app with no frontend framework. All application logic lives in two files:
+FreeTTS is a vanilla JavaScript single-page app with no frontend framework. Application code lives in three files:
 
-- **`index.html`** — full HTML structure, Tailwind utility classes, modal markup
-- **`FreeTtsUtils.js`** — all app logic (~286 lines): editor init, mode switching, TTS playback, theme management
+- **`FreeTtsUtils.js`** (~400 lines) — app orchestration: editor init, mode switching, TTS playback coordination, theme management
+- **`src/kokoro-player.js`** (~340 lines) — chunk-based audio player class (`KokoroPlayer`) for the Kokoro TTS engine
+- **`src/tts-worker.js`** — Web Worker that runs `kokoro-js` (ONNX Runtime) to generate audio off the main thread
 
 ### Editor Modes
 
 The app has two editing modes toggled via tab buttons:
 
 1. **Reveal Codes** — a `<textarea>` showing raw Markdown with syntax visible
-2. **Visual** — a [Milkdown](https://milkdown.dev/) WYSIWYG editor instance
+2. **Visual** — a [Milkdown](https://milkdown.dev/) WYSIWYG editor instance (bundled via npm)
 
-Mode switching syncs content between the textarea and Milkdown via its `replaceAll` command. Milkdown is initialized lazily on first switch to Visual mode. The Milkdown instance is loaded from `esm.sh` CDN (not bundled), so the app works without a build step by opening `index.html` directly — but the Vite build is used for GitHub Pages deployment.
+Mode switching syncs content between the textarea and Milkdown via its `replaceAll` command. Milkdown is initialized lazily on first switch to Visual mode. The app requires `npx vite` to run (ES module imports, Web Worker, ONNX Runtime).
 
-### TTS Engine
+### TTS Engines
 
-Uses the native Web Speech API (`SpeechSynthesis`). Key behavior:
-- Markdown syntax is stripped before speaking using regex in `cleanMarkdownForSpeech()`
-- Word-level highlighting uses `SpeechSynthesisUtterance` boundary events
-- In Reveal Codes mode, word highlighting is calculated by character offsets on the textarea
+The app supports two TTS engines, selected via dropdown:
+
+#### 1. Web Speech API (`SpeechSynthesis`)
+- Markdown syntax is stripped before speaking using `cleanMarkdown()` regex
+- Word-level highlighting uses `SpeechSynthesisUtterance` boundary events (`e.name === 'word'`)
+- In Reveal Codes mode, word highlighting is calculated by character offsets on the textarea (`setSelectionRange`)
 - In Visual mode, a `TreeWalker` traverses DOM text nodes to find and highlight words
 - TTS can start from a cursor position or text selection
+- Pitch slider is supported (except Safari/Firefox)
+
+#### 2. Kokoro TTS (`kokoro-js`)
+- Neural TTS engine running via ONNX Runtime Web in a Web Worker (`src/tts-worker.js`)
+- Worker auto-initializes on first use with top-level await, detects WebGPU vs WASM backend
+- Model loaded from Hugging Face (`onnx-community/Kokoro-82M-v1.0-ONNX`) on first use
+- Text is split into chunks and streamed back to the main thread as audio blobs
+- **KokoroPlayer** renders each chunk as an independent `<audio>` element with controls
+  - Cards append incrementally to the DOM — existing playback is never interrupted
+  - Active chunk is highlighted with a blue border; styling updates are targeted (not full DOM rebuilds)
+  - Auto-advance is driven by the `ended` event on each audio element
+  - Click any chunk card to seek directly to it
+  - Merged audio can be downloaded as WAV after generation completes
+- Chunk-by-chunk text highlighting is synced via `_onChunkPlay` override
 
 ### State
 
-Managed via simple module-level variables — no framework state management. Key globals: current editing mode, Milkdown editor instance, current TTS utterance, and word position tracking.
+Managed via simple module-level variables in `FreeTtsUtils.js` — no framework state management. Key globals:
+- `currentMarkdown`, `milkdownEditor`, `isSourceMode`
+- `isSpeaking`, `activeEngine` (`'webspeech'` | `'kokoro'`)
+- `kokoroPlayer` (KokoroPlayer instance), `kokoroTextToSpeak`, `kokoroStartOffset`
+- SpeechSynthesis voices array and pitch/speed slider values
 
 ### Styling
 

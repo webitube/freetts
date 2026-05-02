@@ -4,11 +4,13 @@ This document covers building, testing, deployment, and infrastructure for the F
 
 ## Overview
 
-FreeTTS is a single‑page web application built with vanilla JavaScript and uses Vite as the build tool. The application features a hybrid Markdown editor (Milkdown) and a Text‑to‑Speech engine powered by the Web Speech API. The project is designed to be lightweight, portable, and easy to integrate.
+FreeTTS is a single‑page web application built with vanilla JavaScript and uses Vite as the build tool. The application features a hybrid Markdown editor (Milkdown) and a dual Text‑to‑Speech engine: the native Web Speech API and Kokoro TTS (a neural TTS engine powered by `kokoro-js` and ONNX Runtime Web, running in a Web Worker). The project is designed to be lightweight, portable, and easy to integrate.
 
 **Key technology stack:**
 - **Build tool:** Vite
-- **Editor framework:** Milkdown (loaded via CDN)
+- **Editor framework:** Milkdown (bundled via npm)
+- **TTS engines:** Web Speech API + Kokoro TTS (`kokoro-js`, ONNX Runtime Web)
+- **Off‑thread audio generation:** Web Worker (`src/tts-worker.js`)
 - **Styling:** Tailwind CSS (pre‑compiled)
 - **Package manager:** npm
 - **Hosting:** GitHub Pages (static hosting)
@@ -31,7 +33,7 @@ FreeTTS is a single‑page web application built with vanilla JavaScript and use
    ```bash
    npm install
    ```
-   This installs Vite (dev dependency) and the required Milkdown packages.
+   This installs Vite (dev dependency), Milkdown packages, and the Kokoro TTS stack (`kokoro-js`, `onnxruntime-web`, `phonemizer`).
 
 3. **Verify installation**
    - Check Node.js version: `node --version`
@@ -48,9 +50,9 @@ Run the development server with hot‑module replacement (HMR):
 npx vite
 ```
 
-Vite will start the server, usually at `http://localhost:5173`. Open this URL in a browser to see the application. Any changes to `index.html`, `FreeTtsUtils.js`, or CSS files will trigger a live reload.
+Vite will start the server, usually at `http://localhost:5173`. Open this URL in a browser to see the application. Any changes to source files will trigger a live reload.
 
-**Alternative:** Because the application is vanilla JavaScript and loads Milkdown from `esm.sh`, you can also open `index.html` directly in a browser (file protocol). This is useful for quick testing without a build step, but note that some CDN‑loaded resources may be subject to cross‑origin restrictions.
+**Note:** The app uses ES module imports, a Web Worker, and ONNX Runtime Web, so it **requires** `npx vite` to run — it cannot be opened directly from the file system.
 
 ## Building for Production
 
@@ -83,26 +85,35 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
     base: '/dist/',
+    assetsInclude: ['**/*.onnx', '**/*.json'],
     optimizeDeps: {
-        exclude: ['onnxruntime-web', 'phonemizer'],
+        exclude: ['onnxruntime-web'],
     },
 });
 ```
 
 - `base`: sets the public base path for GitHub Pages (change this if deploying to a different subpath or custom domain).
-- `optimizeDeps.exclude`: prevents Vite from trying to bundle these large, optional packages that are loaded dynamically.
+- `assetsInclude`: ensures `.onnx` model files and `.json` tokenizer files are served as static assets.
+- `optimizeDeps.exclude`: prevents Vite from trying to bundle ONNX Runtime (loaded dynamically by `kokoro-js`).
 
 ## Testing
 
 Currently, the project does not have an automated test suite. However, manual testing should cover:
 
 1. **Editor modes:** Switch between “Reveal Codes” and “Visual” modes and verify content synchronization.
-2. **TTS playback:** Select text and click the play button; ensure word‑level highlighting works in both modes.
-3. **Theme toggling:** Click the theme icon and verify that light/dark modes are applied and persisted.
-4. **Export features:** Test the “Copy” and “Download .md” buttons.
-5. **Responsive layout:** Resize the browser and confirm the UI adapts correctly.
+2. **Web Speech TTS:** Select text and click the play button; ensure word‑level highlighting works in both modes.
+3. **Kokoro TTS:** Switch the engine selector to "Kokoro TTS", select text, and play. Verify:
+   - Audio chunks appear as cards and play sequentially without cutting each other short
+   - The active chunk is highlighted with a blue border
+   - Clicking a chunk card seeks directly to that chunk
+   - The "Download Audio" button appears after generation completes
+   - No AbortErrors appear in the browser console
+4. **Engine switching:** Toggle between Web Speech and Kokoro, verify each plays correctly.
+5. **Theme toggling:** Click the theme icon and verify that light/dark modes are applied and persisted.
+6. **Export features:** Test the “Copy” and “Download .md” buttons.
+7. **Responsive layout:** Resize the browser and confirm the UI adapts correctly.
 
-**Future improvements:** Adding unit tests for `FreeTtsUtils.js` and integration tests with a headless browser (e.g., Playwright) is recommended.
+**Future improvements:** Adding unit tests and integration tests with a headless browser (e.g., Playwright) is recommended.
 
 ## Deployment
 
@@ -236,8 +247,10 @@ Because FreeTTS is a static front‑end application, monitoring focuses on user�
 | Problem | Possible cause | Solution |
 |---------|---------------|----------|
 | Local dev server won’t start | Port 5173 already in use | Run `npx vite --port 3000` or kill the process using the port. |
-| Milkdown editor not loading in Visual mode | CDN (`esm.sh`) blocked or unreachable | Check network connectivity; try opening `index.html` directly. |
-| TTS not speaking/highlighting | Web Speech API not supported or voice not available | Use a modern browser (Chrome/Edge). Check browser permissions for speech synthesis. |
+| Milkdown editor not loading in Visual mode | Bundling issue or dependency mismatch | Check that `npm install` completed successfully and all Milkdown packages match versions. |
+| Kokoro TTS never starts speaking | Model not downloaded yet (first load) | The Kokoro 82M ONNX model downloads on first use (~200 MB). Wait for "Kokoro TTS ready." status. |
+| Kokoro TTS uses WASM instead of WebGPU | Browser doesn’t support WebGPU | Falls back to WASM automatically. A `powerPreference` Chromium warning is harmless (crbug.com/369219127). |
+| TTS not speaking/highlighting (Web Speech) | Web Speech API not supported or voice not available | Use a modern browser (Chrome/Edge). Check browser permissions for speech synthesis. |
 | Built site shows blank page | Incorrect base path for hosting | Adjust `base` in `vite.config.js` to match your deployment subpath. |
 | GitHub Pages returns 404 | Repository not configured for Pages, or wrong branch | In repository Settings → Pages, set source branch to `gh‑pages` (or `main/docs`). |
 | Deployment workflow fails | Insufficient permissions | Ensure the workflow has `contents: write` permission and the `GITHUB_TOKEN` is present. |
@@ -248,8 +261,10 @@ Because FreeTTS is a static front‑end application, monitoring focuses on user�
 - [GitHub Pages Documentation](https://docs.github.com/en/pages)
 - [Milkdown Documentation](https://milkdown.dev/)
 - [Web Speech API MDN](https://developer.mozilla.org/en‑US/docs/Web/API/Web_Speech_API)
+- [Kokoro TTS / kokoro-js](https://github.com/nicklausw/kokoro-js)
+- [ONNX Runtime Web](https://onnxruntime.ai/)
 - [Tailwind CSS](https://tailwindcss.com/)
 
 ---
 
-*Last updated: 2026‑04‑23*
+*Last updated: 2026‑05‑02*
