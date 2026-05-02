@@ -4,6 +4,6 @@ export default defineConfig({
     base: '/dist/',
     assetsInclude: ['**/*.onnx', '**/*.json'],
     optimizeDeps: {
-        exclude: ['onnxruntime-web', 'phonemizer'],
+        exclude: ['onnxruntime-web'],
     },
 });

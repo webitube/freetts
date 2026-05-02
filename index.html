@@ -48,7 +48,7 @@
             <div class="flex flex-wrap items-center gap-3">
                 <select id="engine-select" title="Speech Engine" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs outline-none">
                     <option value="webspeech">Web Speech</option>
-                    <option value="kitten">KittenTTS</option>
+                    <option value="kokoro">Kokoro TTS</option>
                 </select>
 
                 <select id="voice-select" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs outline-none">
@@ -88,6 +88,9 @@
             <textarea id="source-editor" spellcheck="false" placeholder="Markdown source code..."></textarea>
         </div>
 
+        <!-- KOKORO TTS CHUNK LIST -->
+        <div id="kokoro-chunk-list" class="hidden mt-4 max-h-[320px] overflow-y-auto space-y-1"></div>
+
         <!-- FOOTER ACTIONS -->
         <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex gap-2">
@@ -98,6 +101,10 @@
                 <button id="download-markdown" class="bg-blue-600 text-white px-4 py-2 rounded text-sm flex items-center gap-2">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Download .md
+                </button>
+                <button id="download-audio" class="bg-green-600 text-white px-4 py-2 rounded text-sm flex items-center gap-2 hidden">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Audio
                 </button>
             </div>
             <div class="text-right">

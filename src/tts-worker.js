@@ -1,14 +1,6 @@
-import { KittenTTS, TextSplitterStream } from './kitten-tts.js';
+import { KokoroTTS, TextSplitterStream } from 'kokoro-js';
 
-//const MODEL_CDN = 'https://cdn.jsdelivr.net/gh/clowerweb/kitten-tts-web-demo@main/public/tts-model/';
-
-// Note: jsdelivr.net policy is that single files have a 20 MB max. file size to qualify for hosting and a limit
-//       of 150 MB for total package size.
-const MODEL_CDN = `${import.meta.env.BASE_URL}models/`
-const MODEL_PATH = `${MODEL_CDN}kitten_tts_nano_v0_8.onnx`;
-
-let tts = null;
-let device = 'wasm';
+const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 
 async function detectWebGPU() {
     if (!navigator.gpu) return false;
@@ -20,119 +12,68 @@ async function detectWebGPU() {
     }
 }
 
-async function initializeModel(useWebGPU = false) {
-    try {
-        const webGPUSupported = useWebGPU ? await detectWebGPU() : false;
-        device = webGPUSupported ? 'webgpu' : 'wasm';
-        self.postMessage({ status: 'device', device });
+async function main() {
+    const device = (await detectWebGPU()) ? 'webgpu' : 'wasm';
+    self.postMessage({ status: 'device', device });
 
-        tts = await KittenTTS.from_pretrained(MODEL_PATH, {
+    const deviceType = device === 'wasm' ? 'q8' : 'fp32';
+    let tts;
+    try {
+        tts = await KokoroTTS.from_pretrained(MODEL_ID, {
+            dtype: deviceType,
             device,
-            modelBaseUrl: MODEL_CDN,
         });
-
-        self.postMessage({ status: 'ready', voices: tts.voices, device });
     } catch (e) {
-        console.error('Worker init error:', e);
         self.postMessage({ status: 'error', data: e.message });
-    }
-}
-
-self.addEventListener('message', async (e) => {
-    const { type, useWebGPU, text, voice, speed, sampleRate = 24000 } = e.data;
-
-    if (type === 'init') {
-        await initializeModel(useWebGPU);
         return;
     }
 
-    if (!tts) {
-        self.postMessage({ status: 'error', data: 'Model not initialized' });
-        return;
-    }
+    self.postMessage({ status: 'ready', voices: tts.voices, device });
 
-    const streamer = new TextSplitterStream();
-    streamer.push(text);
-    streamer.close();
+    self.addEventListener('message', async (e) => {
+        const { text, voice, speed } = e.data;
 
-    const stream = tts.stream(streamer, { voice, speed, modelBaseUrl: MODEL_CDN });
-    const chunks = [];
+        const streamer = new TextSplitterStream();
+        streamer.push(text);
+        streamer.close();
 
-    try {
-        for await (const { text: chunkText, audio } of stream) {
-            self.postMessage({ status: 'stream', chunk: { audio: audio.toBlob(), text: chunkText } });
-            chunks.push(audio);
-        }
-    } catch (error) {
-        console.error('Streaming error:', error);
-        self.postMessage({ status: 'error', data: error.message });
-        return;
-    }
+        const stream = tts.stream(streamer, { voice, speed });
+        const chunks = [];
 
-    if (chunks.length === 0) {
-        self.postMessage({ status: 'complete', audio: null });
-        return;
-    }
-
-    try {
-        const originalRate = chunks[0].sampling_rate;
-        const length = chunks.reduce((sum, c) => sum + c.audio.length, 0);
-        let waveform = new Float32Array(length);
-        let offset = 0;
-        for (const c of chunks) { waveform.set(c.audio, offset); offset += c.audio.length; }
-
-        normalizePeak(waveform, 0.9);
-        waveform = trimSilence(waveform, 0.002, Math.floor(originalRate * 0.02));
-
-        if (sampleRate !== originalRate) {
-            if (sampleRate < originalRate) waveform = antiAliasFilter(waveform, originalRate, sampleRate);
-            waveform = resampleLinear(waveform, originalRate, sampleRate);
+        try {
+            for await (const { text: chunkText, audio } of stream) {
+                self.postMessage({
+                    status: 'stream',
+                    chunk: { audio: audio.toBlob(), text: chunkText },
+                });
+                chunks.push(audio);
+            }
+        } catch (error) {
+            self.postMessage({ status: 'error', data: error.message });
+            return;
         }
 
-        const merged = new chunks[0].constructor(waveform, sampleRate);
-        self.postMessage({ status: 'complete', audio: merged.toBlob() });
-    } catch (error) {
-        console.error('Audio merge error:', error);
-        self.postMessage({ status: 'error', data: error.message });
-    }
-});
+        if (chunks.length === 0) {
+            self.postMessage({ status: 'complete', mergedAudio: null });
+            return;
+        }
 
-function normalizePeak(f32, target = 0.9) {
-    if (!f32?.length) return;
-    let max = 1e-9;
-    for (let i = 0; i < f32.length; i++) max = Math.max(max, Math.abs(f32[i]));
-    const g = Math.min(4, target / max);
-    if (g < 1) for (let i = 0; i < f32.length; i++) f32[i] *= g;
+        try {
+            const samplingRate = chunks[0].sampling_rate;
+            const length = chunks.reduce((sum, c) => sum + c.audio.length, 0);
+            const waveform = new Float32Array(length);
+            let offset = 0;
+            for (const c of chunks) {
+                waveform.set(c.audio, offset);
+                offset += c.audio.length;
+            }
+
+            const merged = new chunks[0].constructor(waveform, samplingRate);
+            self.postMessage({ status: 'complete', mergedAudio: merged.toBlob() });
+        } catch (error) {
+            self.postMessage({ status: 'error', data: error.message });
+        }
+    });
 }
 
-function trimSilence(f32, thresh = 0.002, minSamples = 480) {
-    let s = 0, e = f32.length - 1;
-    while (s < e && Math.abs(f32[s]) < thresh) s++;
-    while (e > s && Math.abs(f32[e]) < thresh) e--;
-    s = Math.max(0, s - minSamples);
-    e = Math.min(f32.length, e + minSamples);
-    return f32.slice(s, e);
-}
-
-function antiAliasFilter(input, inRate, outRate) {
-    const cutoff = Math.min(outRate / 2, inRate / 2) * 0.9;
-    const a = Math.exp(-2 * Math.PI * (cutoff / (inRate / 2)));
-    const output = new Float32Array(input.length);
-    output[0] = input[0] * (1 - a);
-    for (let i = 1; i < input.length; i++) output[i] = input[i] * (1 - a) + output[i - 1] * a;
-    return output;
-}
-
-function resampleLinear(input, inRate, outRate) {
-    if (inRate === outRate) return input;
-    const ratio = outRate / inRate;
-    const outLen = Math.floor(input.length * ratio);
-    const out = new Float32Array(outLen);
-    for (let i = 0; i < outLen; i++) {
-        const pos = i / ratio;
-        const i0 = Math.floor(pos);
-        const i1 = Math.min(input.length - 1, i0 + 1);
-        out[i] = input[i0] * (1 - (pos - i0)) + input[i1] * (pos - i0);
-    }
-    return out;
-}
+main();

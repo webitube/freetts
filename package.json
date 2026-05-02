@@ -8,7 +8,8 @@
     "@milkdown/theme-nord": "^7.20.0",
     "@milkdown/utils": "^7.20.0",
     "onnxruntime-web": "^1.22.0",
-    "phonemizer": "^1.2.1"
+    "phonemizer": "^1.2.1",
+    "kokoro-js": "^1.2.0"
   },
   "name": "freetts",
   "version": "1.0.0",

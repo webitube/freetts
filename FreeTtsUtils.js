@@ -5,7 +5,7 @@ import { gfm } from '@milkdown/preset-gfm';
 import { history } from '@milkdown/plugin-history';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { replaceAll } from '@milkdown/utils';
-import { chunkText } from './src/text-cleaner.js';
+import { KokoroPlayer } from './src/kokoro-player.js';
 
 // --- STATE ---
 const initialValue = `# Welcome to FreeTTS`;
@@ -22,15 +22,22 @@ let activeEngine = 'webspeech';
 const synth = window.speechSynthesis;
 let voices = [];
 
-// KittenTTS
-let kittenWorker = null;
-let kittenReady = false;
-let kittenInitializing = false;
-let audioQueue = [];
-let currentAudioSource = null;
-let audioCtx = null;
-let chunkOffsets = [];
-let currentChunkIndex = 0;
+// Kokoro TTS — managed by KokoroPlayer instance
+const kokoroPlayer = new KokoroPlayer('kokoro-chunk-list', (msg) => {
+    if (elements.ttsStatus) elements.ttsStatus.textContent = msg;
+    // Show download button when Kokoro TTS is active and has merged audio
+    const dlBtn = document.getElementById('download-audio');
+    if (dlBtn) {
+        dlBtn.classList.toggle('hidden', activeEngine !== 'kokoro' || !kokoroPlayer.mergedBlob);
+    }
+}, (active) => {
+    // Sync isSpeaking state with the UI play/stop button
+    isSpeaking = active;
+    elements.playIcon.classList.toggle('hidden', active);
+    elements.stopIcon.classList.toggle('hidden', !active);
+    elements.btnTts.classList.toggle('text-red-600', active);
+    elements.btnTts.classList.toggle('text-blue-600', !active);
+});
 
 // --- BROWSER DETECTION ---
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
@@ -136,9 +143,9 @@ elements.pitchSlider.oninput = () => {
 function updatePitchWarning() {
     const el = elements.pitchWarning;
     const slider = elements.pitchSlider;
-    if (activeEngine === 'kitten') {
-        el.textContent = '';
-        el.classList.add('hidden');
+    if (activeEngine === 'kokoro') {
+        el.textContent = 'Pitch only applies to Web Speech.';
+        el.classList.remove('hidden');
         slider.disabled = false;
     } else if (isSafari) {
         el.textContent = 'Pitch not supported in Safari.';
@@ -166,71 +173,34 @@ function loadWebSpeechVoices() {
 if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadWebSpeechVoices;
 loadWebSpeechVoices();
 
-const KITTEN_VOICES = [
-    { id: 'expr-voice-1-m', name: 'Voice 1 Male' },
-    { id: 'expr-voice-2-m', name: 'Voice 2 Male' },
-    { id: 'expr-voice-3-m', name: 'Voice 3 Male' },
-    { id: 'expr-voice-4-m', name: 'Voice 4 Male' },
-    { id: 'expr-voice-1-f', name: 'Voice 1 Female' },
-    { id: 'expr-voice-2-f', name: 'Voice 2 Female' },
-    { id: 'expr-voice-3-f', name: 'Voice 3 Female' },
-    { id: 'expr-voice-4-f', name: 'Voice 4 Female' },
-];
-
-function loadKittenVoices() {
-    elements.voiceSelect.innerHTML = KITTEN_VOICES
-        .map(v => `<option value="${v.id}">${v.name}</option>`)
-        .join('');
-}
-
 // --- ENGINE SWITCH ---
 elements.engineSelect.onchange = () => {
     activeEngine = elements.engineSelect.value;
-    if (activeEngine === 'kitten') {
-        loadKittenVoices();
-        initKittenWorker();
+    if (activeEngine === 'kokoro') {
+        kokoroPlayer._ensureWorker().then(() => {
+            if (kokoroPlayer.voices) {
+                loadKokoroVoices(kokoroPlayer.voices);
+            } else {
+                // Fallback: show placeholder
+                elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro TTS (loading...)</option>';
+            }
+        });
     } else {
         loadWebSpeechVoices();
     }
     updatePitchWarning();
 };
 
-// --- KITTENTTS WORKER ---
-function initKittenWorker() {
-    if (kittenWorker || kittenInitializing) return;
-    kittenInitializing = true;
-    setTtsStatus('Loading KittenTTS model…');
-    kittenWorker = new Worker(new URL('./src/tts-worker.js', import.meta.url), { type: 'module' });
-    kittenWorker.onmessage = handleWorkerMessage;
-    kittenWorker.postMessage({ type: 'init', useWebGPU: true });
+function loadKokoroVoices(voices) {
+    elements.voiceSelect.innerHTML = Object.entries(voices)
+        .map(([key, v]) => {
+            const locale = v.language === 'en-us' ? 'American' : 'British';
+            return `<option value="${key}">${v.name} (${locale} ${v.gender})</option>`;
+        })
+        .join('');
 }
 
-function handleWorkerMessage(e) {
-    const { status, chunk, audio, device: dev, data } = e.data;
-    if (status === 'device') {
-        setTtsStatus(`KittenTTS: using ${dev.toUpperCase()}`);
-    } else if (status === 'ready') {
-        kittenReady = true;
-        kittenInitializing = false;
-        setTtsStatus('KittenTTS ready.');
-        setTimeout(() => setTtsStatus(''), 3000);
-    } else if (status === 'stream') {
-        audioQueue.push(chunk);
-        if (isSpeaking && !currentAudioSource) playNextKittenChunk();
-    } else if (status === 'complete') {
-        // Final merged blob arrives after all stream chunks — ignored since we play chunks as they arrive
-    } else if (status === 'error') {
-        console.error('Worker error:', data);
-        setTtsStatus(`KittenTTS error: ${data}`);
-        setUIState(false);
-    }
-}
-
-function setTtsStatus(msg) {
-    if (elements.ttsStatus) elements.ttsStatus.textContent = msg;
-}
-
-// --- VISUAL HIGHLIGHTING ---
+// --- VISUAL HIGHLIGHTING (used by WebSpeech word tracking) ---
 function highlightVisualWord(startOffset, wordLength) {
     const selection = window.getSelection();
     const range = document.createRange();
@@ -257,6 +227,7 @@ function highlightVisualWord(startOffset, wordLength) {
         selection.addRange(range);
     }
 }
+
 
 function getVisualCursorInfo() {
     const selection = window.getSelection();
@@ -308,101 +279,56 @@ function stopWebSpeech() {
     setUIState(false);
 }
 
-// --- KITTENTTS PLAYBACK ---
-function getAudioContext() {
-    if (!audioCtx || audioCtx.state === 'closed') audioCtx = new AudioContext();
-    return audioCtx;
+// --- KOKORO TTS PLAYBACK ---
+let kokoroTextToSpeak = '';
+let kokoroStartOffset = 0;
+
+function speakWithKokoro(textToSpeak, startOffset) {
+    kokoroTextToSpeak = textToSpeak;
+    kokoroStartOffset = startOffset;
+    const voice = elements.voiceSelect.value || 'af_heart';
+    const speed = parseFloat(elements.speedSlider.value);
+    kokoroPlayer.play(textToSpeak, voice, speed);
 }
 
-async function playNextKittenChunk() {
-    if (!audioQueue.length) {
-        if (isSpeaking) setUIState(false);
-        return;
-    }
+function stopKokoro() {
+    kokoroPlayer.stop();
+}
 
-    const chunk = audioQueue.shift();
-    const chunkIdx = currentChunkIndex++;
+// Chunk-by-chunk highlighting for Kokoro TTS
+kokoroPlayer._onChunkPlay = (index) => {
+    const chunk = kokoroPlayer.chunks[index];
+    if (!chunk) return;
 
-    // Sentence-level highlighting
-    if (chunkOffsets[chunkIdx] !== undefined) {
-        const offset = chunkOffsets[chunkIdx];
-        const len = chunk.text ? chunk.text.length : 0;
-        if (isSourceMode) {
-            elements.source.focus();
-            elements.source.setSelectionRange(offset, offset + len);
-        } else {
-            highlightVisualWord(offset, len);
+    // Find the chunk text position within the full text
+    // Walk from the start of text, matching chunks sequentially
+    let searchFrom = 0;
+    for (let i = 0; i < index; i++) {
+        const prevChunk = kokoroPlayer.chunks[i];
+        if (prevChunk) {
+            const pos = kokoroTextToSpeak.indexOf(prevChunk.text, searchFrom);
+            if (pos >= 0) searchFrom = pos + prevChunk.text.length;
         }
     }
 
-    try {
-        const ctx = getAudioContext();
-        const arrayBuf = await chunk.audio.arrayBuffer();
-        const audioBuf = await ctx.decodeAudioData(arrayBuf);
-        const source = ctx.createBufferSource();
-        source.buffer = audioBuf;
-        source.detune.value = parseInt(elements.pitchSlider.value) * 100;
-        source.connect(ctx.destination);
-        source.onended = () => {
-            currentAudioSource = null;
-            playNextKittenChunk();
-        };
-        source.start();
-        currentAudioSource = source;
-    } catch (err) {
-        console.error('Audio playback error:', err);
-        currentAudioSource = null;
-        playNextKittenChunk();
+    const chunkPos = kokoroTextToSpeak.indexOf(chunk.text, searchFrom);
+    if (chunkPos < 0) return;
+
+    const offset = kokoroStartOffset + chunkPos;
+    const length = chunk.text.length;
+
+    if (isSourceMode) {
+        elements.source.focus();
+        elements.source.setSelectionRange(offset, offset + length);
+    } else {
+        highlightVisualWord(offset, length);
     }
-}
-
-function speakWithKitten(textToSpeak, startOffset) {
-    if (!kittenWorker) {
-        initKittenWorker();
-        elements.status.textContent = 'Model loading, please wait…';
-        setTimeout(() => elements.status.textContent = 'Ready.', 3000);
-        return;
-    }
-    if (!kittenReady) {
-        elements.status.textContent = 'Model still loading…';
-        setTimeout(() => elements.status.textContent = 'Ready.', 3000);
-        return;
-    }
-
-    // Pre-compute chunk offsets in source text for sentence highlighting
-    const cleanText = cleanMarkdown(textToSpeak);
-    const chunks = chunkText(cleanText);
-    chunkOffsets = [];
-    currentChunkIndex = 0;
-    let searchFrom = startOffset;
-    for (const chunk of chunks) {
-        // Find first word of chunk in original source
-        const firstWords = chunk.split(/\s+/).slice(0, 3).join(' ');
-        const idx = currentMarkdown.indexOf(firstWords, searchFrom);
-        chunkOffsets.push(idx >= 0 ? idx : searchFrom);
-        if (idx >= 0) searchFrom = idx;
-    }
-
-    audioQueue = [];
-    currentAudioSource = null;
-    setUIState(true);
-
-    const voice = elements.voiceSelect.value || 'expr-voice-2-m';
-    const speed = parseFloat(elements.speedSlider.value);
-    kittenWorker.postMessage({ text: textToSpeak, voice, speed, sampleRate: 24000 });
-}
-
-function stopKitten() {
-    if (currentAudioSource) { try { currentAudioSource.stop(); } catch {} currentAudioSource = null; }
-    audioQueue = [];
-    setUIState(false);
-    if (!isSourceMode) window.getSelection().removeAllRanges();
-}
+};
 
 // --- MAIN PLAYBACK TOGGLE ---
 function togglePlayback() {
     if (isSpeaking) {
-        if (activeEngine === 'kitten') stopKitten();
+        if (activeEngine === 'kokoro') stopKokoro();
         else stopWebSpeech();
         return;
     }
@@ -429,8 +355,8 @@ function togglePlayback() {
         return;
     }
 
-    if (activeEngine === 'kitten') {
-        speakWithKitten(textToSpeak, startOffset);
+    if (activeEngine === 'kokoro') {
+        speakWithKokoro(textToSpeak, startOffset);
     } else {
         speakWithWebSpeech(textToSpeak, startOffset);
     }
@@ -461,4 +387,8 @@ document.getElementById('download-markdown').onclick = () => {
     a.download = 'document.md';
     a.click();
     URL.revokeObjectURL(url);
+};
+
+document.getElementById('download-audio').onclick = () => {
+    kokoroPlayer.downloadMerged();
 };
