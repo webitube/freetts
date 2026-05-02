@@ -65,7 +65,7 @@ npx vite build
 This command:
 - Bundles and minifies JavaScript (where applicable)
 - Copies all static assets (images, icons, CSS) to the `dist/` folder
-- Applies the **base path** configured in `vite.config.js` (`/dist/` for GitHub Pages)
+- Applies the **base path** configured in `vite.config.js` (`/freetts/` for GitHub Pages)
 - Generates an `index.html` that references the built assets
 
 The output directory `dist/` contains everything needed to serve the application as a static site.
@@ -84,7 +84,7 @@ The build is controlled by `vite.config.js`:
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-    base: '/dist/',
+    base: '/freetts/',
     assetsInclude: ['**/*.onnx', '**/*.json'],
     optimizeDeps: {
         exclude: ['onnxruntime-web'],
@@ -92,7 +92,7 @@ export default defineConfig({
 });
 ```
 
-- `base`: sets the public base path for GitHub Pages (change this if deploying to a different subpath or custom domain).
+- `base`: sets the public base path for GitHub Pages (`/freetts/` — matches the `webitube/freetts` repository name). Change this to match your deployment subpath if deploying elsewhere.
 - `assetsInclude`: ensures `.onnx` model files and `.json` tokenizer files are served as static assets.
 - `optimizeDeps.exclude`: prevents Vite from trying to bundle ONNX Runtime (loaded dynamically by `kokoro-js`).
 
@@ -117,89 +117,17 @@ Currently, the project does not have an automated test suite. However, manual te
 
 ## Deployment
 
-### Option 1: Manual Deployment to GitHub Pages (using `gh-pages`)
+Deployment is handled automatically by **GitHub Actions**. A workflow file (`.github/workflows/deploy.yml`) builds the project and publishes to GitHub Pages on every push to the `master` branch.
 
-1. Install the `gh-pages` package as a dev dependency:
-   ```bash
-   npm install --save-dev gh-pages
-   ```
+**Setup steps (one-time):**
+1. In your GitHub repository, go to **Settings → Pages** and set the source branch to `gh-pages`.
+2. Push to `master` — the workflow under the **Actions** tab will build and deploy automatically.
 
-2. Add a deploy script to `package.json`:
-   ```json
-   "scripts": {
-     "dev": "vite",
-     "build": "vite build",
-     "preview": "vite preview",
-     "deploy": "gh-pages -d dist"
-   }
-   ```
+The live site will be available at `https://webitube.github.io/freetts/`.
 
-3. Build the project and deploy:
-   ```bash
-   npm run build
-   npm run deploy
-   ```
-   The `gh-pages` tool will create a `gh-pages` branch (if it doesn’t exist) and push the contents of `dist/` to it. GitHub Pages will automatically start serving the site from that branch.
+> **Note:** The `gh-pages` npm package is not used — it fails on Windows (`ENAMETOOLONG`). Always use the GitHub Actions workflow for deployment.
 
-   The live site will be available at `https://<username>.github.io/freetts/` (or your custom domain).
-
-### Option 2: Automated Deployment with GitHub Actions
-
-Create a CI/CD pipeline that builds and deploys the site on every push to the `main` (or `master`) branch. A workflow file (`.github/workflows/deploy.yml`) is already provided in the repository.
-
-1. The workflow file `.github/workflows/deploy.yml` is already present. If you need to customize it, here is its content:
-
-   ```yaml
-   name: Deploy to GitHub Pages
-
-   on:
-     push:
-       branches: [main, master]
-
-   jobs:
-     build-and-deploy:
-       runs-on: ubuntu-latest
-       permissions:
-         contents: write
-       steps:
-         - name: Checkout
-           uses: actions/checkout@v4
-
-         - name: Setup Node.js
-           uses: actions/setup-node@v4
-           with:
-             node-version: '20'
-
-         - name: Install dependencies
-           run: npm ci
-
-         - name: Build
-           run: npm run build
-
-         - name: Deploy to GitHub Pages
-           uses: peaceiris/actions-gh-pages@v3
-           with:
-             github_token: ${{ secrets.GITHUB_TOKEN }}
-             publish_dir: ./dist
-             # Optional: set a custom base path if different from '/dist/'
-             # cname: example.com
-   ```
-
-2. Ensure the workflow file is committed and pushed (if it's not already in the repository):
-   ```bash
-   git add .github/workflows/deploy.yml
-   git commit -m "Add GitHub Actions deployment workflow"
-   git push origin main
-   ```
-
-3. The workflow will run automatically on future pushes. You can monitor its progress under the **Actions** tab of your GitHub repository.
-
-**Notes:**
-- Ensure GitHub Pages is enabled in your repository settings (Settings → Pages) and set to use the `gh‑pages` branch as the source.
-- The `peaceiris/actions-gh-pages` action handles the branch creation/update and triggers a Pages rebuild.
-- If you change the `base` in `vite.config.js`, ensure the GitHub Pages repository settings match the new subpath (or use a custom domain).
-
-### Option 3: Deploy to Other Static Hosts (Netlify, Vercel, Cloudflare Pages)
+### Deploy to Other Static Hosts (Netlify, Vercel, Cloudflare Pages)
 
 The built `dist/` folder can be deployed to any static hosting service.
 

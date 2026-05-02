@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-    base: '/dist/',
+    base: '/freetts/',
     assetsInclude: ['**/*.onnx', '**/*.json'],
     optimizeDeps: {
         exclude: ['onnxruntime-web'],

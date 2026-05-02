@@ -7,16 +7,19 @@
     "@milkdown/preset-gfm": "^7.20.0",
     "@milkdown/theme-nord": "^7.20.0",
     "@milkdown/utils": "^7.20.0",
+    "kokoro-js": "^1.2.0",
     "onnxruntime-web": "^1.22.0",
-    "phonemizer": "^1.2.1",
-    "kokoro-js": "^1.2.0"
+    "phonemizer": "^1.2.1"
   },
   "name": "freetts",
   "version": "1.0.0",
   "description": "***Free Markdown Editor with integrated Web-based TTS. Lightweight. No downloads.***",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "echo \"Deploy via GitHub Actions: push to master and visit Actions tab\""
   },
   "repository": {
     "type": "git",
