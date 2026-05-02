@@ -85,11 +85,18 @@ export class KokoroPlayer {
                 break;
             case 'stream':
                 this.chunks.push(chunk);
-                this.renderChunks();
-                // Auto-play if we're at the end and playing
-                if (this.currentChunkIndex === this.chunks.length - 2) {
-                    this.currentChunkIndex = this.chunks.length - 1;
-                    this.renderChunks();
+                // Append incrementally without destroying existing audio elements
+                this._appendChunkCard(chunk, this.chunks.length - 1);
+                this.statusCallback(`Generating audio... (${this.chunks.length} chunk(s))`);
+                // Start playback from the first chunk if nothing is playing yet
+                if (this.status === 'generating' && this.currentChunkIndex < 0 && this.chunks.length === 1) {
+                    this.currentChunkIndex = 0;
+                    this._setCardActive(0, true);
+                    this._playChunk(0);
+                }
+                // Resume playback if we were waiting for more chunks
+                if (this.status === 'generating' && this.currentChunkIndex === this.chunks.length - 1 && this.chunks.length > 1) {
+                    this._setCardActive(this.currentChunkIndex, true);
                     this._playChunk(this.currentChunkIndex);
                 }
                 break;
@@ -97,6 +104,11 @@ export class KokoroPlayer {
                 this.status = 'ready';
                 this.mergedBlob = mergedAudio;
                 this.statusCallback(`Done. ${this.chunks.length} chunk(s).`);
+                // Reset UI if playback finished / was waiting before complete arrived
+                if (this.currentChunkIndex < 0 || this.currentChunkIndex >= this.chunks.length) {
+                    this.currentChunkIndex = -1;
+                    this._setUIState(false);
+                }
                 break;
             case 'error':
                 this.status = 'error';
@@ -113,7 +125,7 @@ export class KokoroPlayer {
     async play(textToSpeak, voice, speed) {
         // Reset state
         this.chunks = [];
-        this.currentChunkIndex = 0;
+        this.currentChunkIndex = -1;  // nothing playing yet
         this.mergedBlob = null;
         this.status = 'generating';
         this._setStatus(`Generating audio...`);
@@ -211,8 +223,14 @@ export class KokoroPlayer {
 
         // Click to seek
         card.onclick = () => {
+            // Pause all audio then play the clicked chunk
+            const container = document.getElementById(this.containerId);
+            if (container) {
+                container.querySelectorAll('audio').forEach(a => a.pause());
+            }
+            this._setCardActive(this.currentChunkIndex, false);
             this.currentChunkIndex = index;
-            this.renderChunks();
+            this._setCardActive(index, true);
             this._playChunk(index);
         };
 
@@ -235,19 +253,23 @@ export class KokoroPlayer {
             this._onChunkPlay(index);
         });
         audioEl.addEventListener('ended', () => {
-            if (this.status !== 'generating' && this.currentChunkIndex === this.chunks.length - 1) {
-                // Last chunk finished
+            const nextIdx = index + 1;
+            if (nextIdx < this.chunks.length) {
+                // Next chunk is available — advance to it
+                // _onChunkPlay will fire via the 'play' event on the new audio element
+                this._setCardActive(index, false);
+                this._setCardActive(nextIdx, true);
+                this.currentChunkIndex = nextIdx;
+                this._playChunk(nextIdx);
+            } else if (this.status === 'generating') {
+                // No more chunks yet — mark as waiting so stream handler resumes
+                this.currentChunkIndex = this.chunks.length; // sentinel: "waiting for more"
+                this._setCardActive(index, false);
+            } else {
+                // Last chunk finished and generation complete
+                this._setCardActive(index, false);
                 this.currentChunkIndex = -1;
                 this._setUIState(false);
-                this.renderChunks();
-            } else if (this.chunks.length > 0) {
-                // Advance to next chunk
-                this.currentChunkIndex = index + 1;
-                this.renderChunks();
-                if (this.currentChunkIndex < this.chunks.length) {
-                    this._playChunk(this.currentChunkIndex);
-                    this._onChunkPlay(this.currentChunkIndex);
-                }
             }
         });
 
@@ -266,6 +288,33 @@ export class KokoroPlayer {
         if (!audioEl) return;
         audioEl.currentTime = 0;
         audioEl.play().catch(() => {});
+    }
+
+    // ─── Incremental DOM Helpers ────────────────────────────────────
+
+    /** Append a single chunk card without destroying existing audio elements. */
+    _appendChunkCard(chunk, index) {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+        container.classList.remove('hidden');
+        const card = this._createChunkCard(chunk, index);
+        container.appendChild(card);
+        if (index === this.currentChunkIndex) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    /** Toggle active/inactive styling on a chunk card by index. */
+    _setCardActive(index, isActive) {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+        const card = container.querySelector(`[data-chunk="${index}"]`);
+        if (!card) return;
+        card.className = `p-3 rounded-lg transition-all cursor-pointer ${
+            isActive
+                ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                : 'bg-gray-50 dark:bg-slate-800 border border-transparent hover:bg-blue-50 dark:hover:bg-slate-700'
+        }`;
     }
 
     // ─── Chunk Highlighting Hook ─────────────────────────────────────
