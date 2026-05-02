@@ -1,10 +1,10 @@
-import { Editor, rootCtx, defaultValueCtx } from './@milkdown/core';
-import { nord } from './@milkdown/theme-nord';
-import { commonmark } from './@milkdown/preset-commonmark';
-import { gfm } from './@milkdown/preset-gfm';
-import { history } from './@milkdown/plugin-history';
-import { listener, listenerCtx } from './@milkdown/plugin-listener';
-import { replaceAll } from './@milkdown/utils';
+import { Editor, rootCtx, defaultValueCtx } from '@milkdown/core';
+import { nord } from '@milkdown/theme-nord';
+import { commonmark } from '@milkdown/preset-commonmark';
+import { gfm } from '@milkdown/preset-gfm';
+import { history } from '@milkdown/plugin-history';
+import { listener, listenerCtx } from '@milkdown/plugin-listener';
+import { replaceAll } from '@milkdown/utils';
 import { KokoroPlayer } from './kokoro-player.js';
 
 // --- STATE ---
