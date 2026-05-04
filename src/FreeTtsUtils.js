@@ -59,7 +59,6 @@ const elements = {
     speedVal: document.getElementById('speed-val'),
     pitchSlider: document.getElementById('tts-pitch'),
     pitchVal: document.getElementById('pitch-val'),
-    pitchWarning: document.getElementById('pitch-warning'),
     status: document.getElementById('status-msg'),
     ttsStatus: document.getElementById('tts-status'),
     playIcon: document.getElementById('play-icon'),
@@ -144,10 +143,7 @@ elements.pitchSlider.oninput = () => {
 // --- PITCH CONTROL ---
 // Pitch is now available on all platforms and engines
 function updatePitchWarning() {
-    const el = elements.pitchWarning;
     const slider = elements.pitchSlider;
-    el.textContent = '';
-    el.classList.add('hidden');
     slider.disabled = false;
 }
 updatePitchWarning();
