@@ -37,8 +37,20 @@ export class KokoroPlayer {
 
     // ─── Worker Management ───────────────────────────────────────────
 
+    /** Detect WebGPU on the main thread (not available inside a Web Worker). */
+    async _detectWebGPU() {
+        console.log(`_detectWebGPU(): navigator.gpu=${navigator.gpu}, navigator.useWebGPU=${navigator.useWebGPU}`);
+        if (!navigator.gpu) return false;
+        try {
+            const adapter = await navigator.gpu.requestAdapter();
+            return !!adapter;
+        } catch {
+            return false;
+        }
+    }
+
     /** Ensure the worker is initialized, return a promise that resolves when ready. */
-    _ensureWorker() {
+    async _ensureWorker() {
         if (this.worker) return Promise.resolve();
         if (this.workerInitializing) {
             return new Promise((resolve, reject) => {
@@ -60,7 +72,12 @@ export class KokoroPlayer {
             this._setStatus('error');
             this._setError(e.message);
         };
-        // Worker auto-initializes on import (top-level await in main())
+
+        // Detect WebGPU on the main thread and pass it to the worker.
+        // navigator.gpu is NOT available inside a Web Worker, so we must
+        // detect here and tell the worker which backend to use.
+        const useWebGPU = await this._detectWebGPU();
+        this.worker.postMessage({ status: 'init', useWebGPU });
 
         return new Promise((resolve, reject) => {
             const check = () => {
@@ -170,6 +187,7 @@ export class KokoroPlayer {
         this._setUIState(true);
         this.renderChunks();
 
+        console.log(`play(): navigator.gpu=${navigator.gpu}, navigator.useWebGPU=${navigator.useWebGPU}`);
         await this._ensureWorker();
 
         if (!this.workerReady) {

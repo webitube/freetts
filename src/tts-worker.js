@@ -2,18 +2,25 @@ import { KokoroTTS, TextSplitterStream } from 'kokoro-js';
 
 const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 
-async function detectWebGPU() {
-    if (!navigator.gpu) return false;
-    try {
-        const adapter = await navigator.gpu.requestAdapter();
-        return !!adapter;
-    } catch {
-        return false;
-    }
-}
+// The main thread detects WebGPU (navigator.gpu is NOT available inside a Worker)
+// and sends the result via { status: 'init', useWebGPU: true/false }.
+let useWebGPU = false;
 
 async function main() {
-    const device = (await detectWebGPU()) ? 'webgpu' : 'wasm';
+    // Wait for the main thread to tell us which backend to use.
+    const initDone = new Promise((resolve) => {
+        const handler = (e) => {
+            if (e.data?.status === 'init') {
+                useWebGPU = !!e.data.useWebGPU;
+                self.removeEventListener('message', handler);
+                resolve();
+            }
+        };
+        self.addEventListener('message', handler);
+    });
+
+    await initDone;
+    const device = useWebGPU ? 'webgpu' : 'wasm';
     self.postMessage({ status: 'device', device });
 
     const deviceType = device === 'wasm' ? 'q8' : 'fp32';

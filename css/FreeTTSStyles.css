@@ -204,7 +204,91 @@ header p.text-gray-600 { color: #4b5563; }
 .milkdown pre { background: #f1f5f9; padding: 1rem; border-radius: 0.5rem; color: #1f2937; border: 1px solid #e2e8f0; }
 .dark .milkdown pre { background: #0f172a; border: 1px solid #334155; color: #f8fafc !important; }
 
-/* Modals */
+/* --- KOKORO CHUNK CARDS --- */
+/* Max-height 200px with text truncation for long chunk labels */
+#kokoro-chunk-list [data-chunk] {
+    max-height: 200px;
+    overflow: hidden;
+    transition: max-height 0.2s ease;
+}
+#kokoro-chunk-list [data-chunk]:hover {
+    max-height: 300px;
+}
+#kokoro-chunk-list [data-chunk] .text-sm {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+}
+/* Mobile play indicator styling */
+.mobile-play-indicator {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(59, 130, 246, 0.1);
+}
+.mobile-play-indicator:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+/* --- KOKORO MOBILE UX: Info icon for disabled Kokoro on mobile --- */
+.kokoro-mobile-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    font-size: 11px;
+    color: #d97706;
+    cursor: help;
+}
+.dark .kokoro-mobile-info {
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* --- RESPONSIVE LAYOUT FOR MOBILE --- */
+/* Portrait mode optimization for 1080x1920 and similar */
+@media (max-height: 900px) and (orientation: portrait) {
+    header { margin-bottom: 1rem !important; }
+    header .flex-wrap { gap: 0.5rem !important; }
+    #editor-container { min-height: 350px !important; padding: 1rem !important; }
+    #source-editor { height: 350px !important; }
+    #kokoro-chunk-list { max-height: 200px !important; }
+    .milkdown { font-size: 14px !important; }
+    .milkdown h1 { font-size: 1.5rem !important; }
+    .milkdown h2 { font-size: 1.25rem !important; }
+    .milkdown h3 { font-size: 1.1rem !important; }
+}
+
+/* Landscape mode optimization for 1920x1080 and similar */
+@media (max-width: 1200px) and (orientation: landscape) {
+    header { margin-bottom: 0.75rem !important; }
+    .max-w-4xl { max-width: 100% !important; padding: 0 0.5rem !important; }
+    #editor-container { min-height: 300px !important; padding: 1rem !important; }
+    #source-editor { height: 300px !important; }
+    #kokoro-chunk-list { max-height: 180px !important; }
+}
+
+/* Touch target sizing for mobile (minimum 44x44px) */
+@media (pointer: coarse) {
+    #tts-toggle, #view-source, #view-visual, #help-toggle, #theme-toggle,
+    #get-markdown, #download-markdown, #download-audio, #tts-speed, #tts-pitch,
+    select, button {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    #tts-toggle { padding: 0.5rem !important; }
+    #view-source, #view-visual { padding: 0.5rem 1rem !important; }
+}
+
+/* --- MODALS --- */
 #help-modal .bg-white {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     border: 1px solid #e5e7eb;

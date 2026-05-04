@@ -42,6 +42,8 @@ const kokoroPlayer = new KokoroPlayer('kokoro-chunk-list', (msg) => {
 // --- BROWSER DETECTION ---
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 const isFirefox = /firefox/i.test(navigator.userAgent);
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
 
 // --- DOM ---
 const elements = {
@@ -132,7 +134,7 @@ elements.helpModal.onclick = (e) => { if (e.target === elements.helpModal) toggl
 
 // --- SLIDER DISPLAY ---
 elements.speedSlider.oninput = () => {
-    elements.speedVal.textContent = `${parseFloat(elements.speedSlider.value).toFixed(1)}×`;
+    elements.speedVal.textContent = `${parseFloat(elements.speedSlider.value).toFixed(2)}×`;
 };
 elements.pitchSlider.oninput = () => {
     const v = parseInt(elements.pitchSlider.value);
@@ -177,6 +179,32 @@ loadWebSpeechVoices();
 elements.engineSelect.onchange = () => {
     activeEngine = elements.engineSelect.value;
     if (activeEngine === 'kokoro') {
+        // Mobile Kokoro UX: Show info message and disable Kokoro on mobile
+        if (isMobile) {
+            elements.engineSelect.innerHTML = `
+                <option value="webspeech" selected>Web Speech</option>
+                <option value="kokoro" disabled>Kokoro TTS (unavailable on mobile)</option>
+            `;
+            // Add info indicator next to engine select
+            let kokoroInfo = document.getElementById('kokoro-mobile-info');
+            if (!kokoroInfo) {
+                kokoroInfo = document.createElement('span');
+                kokoroInfo.id = 'kokoro-mobile-info';
+                kokoroInfo.className = 'kokoro-mobile-info';
+                kokoroInfo.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <span>Kokoro disabled on mobile</span>
+                `;
+                elements.engineSelect.parentNode.insertBefore(kokoroInfo, elements.engineSelect.nextSibling);
+            }
+            kokoroInfo.classList.remove('hidden');
+            loadWebSpeechVoices();
+            updatePitchWarning();
+            return;
+        }
+
+        console.log(`onchange(): navigator.gpu=${navigator.gpu}, navigator.useWebGPU=${navigator.useWebGPU}`);
+
         kokoroPlayer._ensureWorker().then(() => {
             if (kokoroPlayer.voices) {
                 loadKokoroVoices(kokoroPlayer.voices);
@@ -186,6 +214,9 @@ elements.engineSelect.onchange = () => {
             }
         });
     } else {
+        // Remove info indicator when switching away from Kokoro
+        const kokoroInfo = document.getElementById('kokoro-mobile-info');
+        if (kokoroInfo) kokoroInfo.remove();
         loadWebSpeechVoices();
     }
     updatePitchWarning();
@@ -371,6 +402,14 @@ function setUIState(active) {
 }
 
 elements.btnTts.onclick = togglePlayback;
+
+// --- KEYBOARD SHORTCUT: Ctrl+Enter to toggle playback ---
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        togglePlayback();
+    }
+});
 
 // --- CLIPBOARD & DOWNLOAD ---
 document.getElementById('get-markdown').onclick = () => {
