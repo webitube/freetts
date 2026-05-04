@@ -35,7 +35,9 @@
       "WebFetch(domain:arxiv.org)",
       "mcp__Duck-duck-go-search__search",
       "mcp__Duck-duck-go-search__fetch_content",
-      "mcp__Brave-search__brave_web_search"
+      "mcp__Brave-search__brave_web_search",
+      "mcp__Filesystem_3__modify_file",
+      "mcp__Git__git_diff"
     ]
   }
 }

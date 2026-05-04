@@ -244,6 +244,9 @@ export class KokoroPlayer {
         audioEl.setAttribute('data-chunk', index);
         audioEl.src = URL.createObjectURL(chunk.audio);
         audioEl.controls = true;
+        audioEl.playsInline = true;  // iOS Safari: play inline, not fullscreen
+        audioEl.preload = 'auto';    // Preload for better mobile playback quality
+        audioEl.muted = true;        // Required for autoplay to work on many mobile browsers
         audioEl.className = 'w-full mt-1';
 
         // Auto-play is handled by _playChunk
@@ -287,7 +290,12 @@ export class KokoroPlayer {
         const audioEl = container.querySelector(`audio[data-chunk="${index}"]`);
         if (!audioEl) return;
         audioEl.currentTime = 0;
-        audioEl.play().catch(() => {});
+        // Unmute the audio (it was muted for autoplay compatibility)
+        audioEl.muted = false;
+        // Small delay to ensure audio is fully initialized before playing
+        setTimeout(() => {
+            audioEl.play().catch(() => {});
+        }, 100);
     }
 
     // ─── Incremental DOM Helpers ────────────────────────────────────
