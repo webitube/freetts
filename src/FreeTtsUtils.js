@@ -203,7 +203,7 @@ elements.engineSelect.onchange = () => {
             return;
         }
 
-        console.log(`onchange(): navigator.gpu=${navigator.gpu}, navigator.useWebGPU=${navigator.useWebGPU}`);
+        //console.log(`onchange(): navigator.gpu=${navigator.gpu}, navigator.useWebGPU=${navigator.useWebGPU}`);
 
         kokoroPlayer._ensureWorker().then(() => {
             if (kokoroPlayer.voices) {

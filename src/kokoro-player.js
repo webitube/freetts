@@ -39,7 +39,7 @@ export class KokoroPlayer {
 
     /** Detect WebGPU on the main thread (not available inside a Web Worker). */
     async _detectWebGPU() {
-        console.log(`_detectWebGPU(): navigator.gpu=${navigator.gpu}, navigator.useWebGPU=${navigator.useWebGPU}`);
+        //console.log(`_detectWebGPU(): navigator.gpu=${navigator.gpu}, navigator.useWebGPU=${navigator.useWebGPU}`);
         if (!navigator.gpu) return false;
         try {
             const adapter = await navigator.gpu.requestAdapter();
@@ -187,7 +187,7 @@ export class KokoroPlayer {
         this._setUIState(true);
         this.renderChunks();
 
-        console.log(`play(): navigator.gpu=${navigator.gpu}, navigator.useWebGPU=${navigator.useWebGPU}`);
+        //console.log(`play(): navigator.gpu=${navigator.gpu}, navigator.useWebGPU=${navigator.useWebGPU}`);
         await this._ensureWorker();
 
         if (!this.workerReady) {
