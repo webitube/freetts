@@ -134,34 +134,21 @@ elements.helpModal.onclick = (e) => { if (e.target === elements.helpModal) toggl
 
 // --- SLIDER DISPLAY ---
 elements.speedSlider.oninput = () => {
-    elements.speedVal.textContent = `${parseFloat(elements.speedSlider.value).toFixed(2)}×`;
+    elements.speedVal.textContent = `${parseFloat(elements.speedSlider.value).toFixed(1)}×`;
 };
 elements.pitchSlider.oninput = () => {
     const v = parseInt(elements.pitchSlider.value);
     elements.pitchVal.textContent = v > 0 ? `+${v}` : `${v}`;
 };
 
-// --- PITCH WARNING ---
+// --- PITCH CONTROL ---
+// Pitch is now available on all platforms and engines
 function updatePitchWarning() {
     const el = elements.pitchWarning;
     const slider = elements.pitchSlider;
-    if (activeEngine === 'kokoro') {
-        el.textContent = 'Pitch only applies to Web Speech.';
-        el.classList.remove('hidden');
-        slider.disabled = false;
-    } else if (isSafari) {
-        el.textContent = 'Pitch not supported in Safari.';
-        el.classList.remove('hidden');
-        slider.disabled = true;
-    } else if (isFirefox) {
-        el.textContent = 'Pitch may not work in Firefox.';
-        el.classList.remove('hidden');
-        slider.disabled = false;
-    } else {
-        el.textContent = '';
-        el.classList.add('hidden');
-        slider.disabled = false;
-    }
+    el.textContent = '';
+    el.classList.add('hidden');
+    slider.disabled = false;
 }
 updatePitchWarning();
 
