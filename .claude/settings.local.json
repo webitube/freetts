@@ -23,7 +23,19 @@
       "Bash(powershell *)",
       "WebFetch(domain:localhost)",
       "Bash(Get-Content *)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Skill(firecrawl:firecrawl)",
+      "Bash(npx skills *)",
+      "WebFetch(domain:skills.sh)",
+      "WebSearch",
+      "WebFetch(domain:en.wikipedia.org)",
+      "WebFetch(domain:www.nature.com)",
+      "WebFetch(domain:quantinuum.com)",
+      "WebFetch(domain:www.ibm.com)",
+      "WebFetch(domain:arxiv.org)",
+      "mcp__Duck-duck-go-search__search",
+      "mcp__Duck-duck-go-search__fetch_content",
+      "mcp__Brave-search__brave_web_search"
     ]
   }
 }
