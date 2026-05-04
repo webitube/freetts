@@ -44,11 +44,11 @@ The app supports two TTS engines, selected via dropdown:
 - In Reveal Codes mode, word highlighting is calculated by character offsets on the textarea (`setSelectionRange`)
 - In Visual mode, a `TreeWalker` traverses DOM text nodes to find and highlight words
 - TTS can start from a cursor position or text selection
-- Pitch slider is supported (except Safari/Firefox)
+- **Pitch slider is now available on all platforms and engines** (Safari/Firefox restrictions removed)
 
 #### 2. Kokoro TTS (`kokoro-js`)
 - Neural TTS engine running via ONNX Runtime Web in a Web Worker (`src/tts-worker.js`)
-- Worker auto-initializes on first use with top-level await, detects WebGPU vs WASM backend
+- **WebGPU detection**: Main thread detects WebGPU availability (not available in worker context) and passes result to worker via `{ status: 'init', useWebGPU }` message
 - Model loaded from Hugging Face (`onnx-community/Kokoro-82M-v1.0-ONNX`) on first use
 - Text is split into chunks and streamed back to the main thread as audio blobs
 - **KokoroPlayer** renders each chunk as an independent `<audio>` element with controls

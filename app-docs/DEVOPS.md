@@ -116,8 +116,7 @@ Currently, the project does not have an automated test suite. However, manual te
 4. **Engine switching:** Toggle between Web Speech and Kokoro, verify each plays correctly.
 5. **Theme toggling:** Click the theme icon and verify that light/dark modes are applied and persisted.
 6. **Export features:** Test the “Copy” and “Download .md” buttons.
-7. **Responsive layout:** Resize the browser and confirm the UI adapts correctly.
-
+7. **Responsive layout:** Resize the browser and confirm the UI adapts correctly.8. **Pitch slider:** Test pitch control (range: -2 to +2, step: 0.5) in both Web Speech and Kokoro TTS modes — it should work on all platforms and engines.
 **Future improvements:** Adding unit tests and integration tests with a headless browser (e.g., Playwright) is recommended.
 
 ## Deployment

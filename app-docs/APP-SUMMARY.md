@@ -22,8 +22,8 @@ Three core source files:
   - **Reveal Codes** — raw Markdown textarea with visible syntax
   - **Visual** — WYSIWYG editor via [Milkdown](https://milkdown.dev/) framework
 - **Two TTS engines:**
-  - **Web Speech API** — uses system voices, strips Markdown syntax, word-level highlighting
-  - **Kokoro TTS** — neural TTS via ONNX Runtime Web (WebGPU/WASM), runs in a Web Worker, chunk-based audio with card UI, mobile autoplay policy handling (muted start + tap-to-play indicators)
+  - **Web Speech API** — uses system voices, strips Markdown syntax, word-level highlighting, **pitch control available on all platforms**
+  - **Kokoro TTS** — neural TTS via ONNX Runtime Web (WebGPU/WASM), runs in a Web Worker, chunk-based audio with card UI, mobile autoplay policy handling (muted start + tap-to-play indicators), **pitch control available on all platforms**
 - **Dark/light theme** persisted via `localStorage`
 - **Responsive** design with Tailwind CSS
 - **Selection-aware playback** — speak from cursor position or selected text
