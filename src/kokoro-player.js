@@ -29,6 +29,10 @@ export class KokoroPlayer {
         this.currentChunkIndex = -1;
         this.status = 'ready';       // 'loading' | 'ready' | 'generating' | 'error'
         this.mergedBlob = null;
+        
+        // Mobile browser detection - autoplay policies are much stricter on mobile
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+            || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
     }
 
     // ─── Worker Management ───────────────────────────────────────────
@@ -88,16 +92,50 @@ export class KokoroPlayer {
                 // Append incrementally without destroying existing audio elements
                 this._appendChunkCard(chunk, this.chunks.length - 1);
                 this.statusCallback(`Generating audio... (${this.chunks.length} chunk(s))`);
-                // Start playback from the first chunk if nothing is playing yet
+            // Start playback from the first chunk if nothing is playing yet
                 if (this.status === 'generating' && this.currentChunkIndex < 0 && this.chunks.length === 1) {
                     this.currentChunkIndex = 0;
                     this._setCardActive(0, true);
-                    this._playChunk(0);
+                    
+                    if (!this.isMobile) {
+                        // On desktop, auto-play immediately
+                        setTimeout(() => this._playChunk(0), 100);
+                    } else {
+                        // On mobile, show "Tap to play" indicator instead
+                        const container = document.getElementById(this.containerId);
+                        if (container) {
+                            const card = container.querySelector(`[data-chunk="0"]`);
+                            if (card) {
+                                const indicator = document.createElement('div');
+                                indicator.className = 'mobile-play-indicator text-xs text-blue-600 dark:text-blue-400 mt-2 text-center';
+                                indicator.textContent = '▶ Tap to play';
+                                card.appendChild(indicator);
+                                setTimeout(() => { if (indicator.parentNode) indicator.remove(); }, 5000);
+                            }
+                        }
+                    }
                 }
                 // Resume playback if we were waiting for more chunks
                 if (this.status === 'generating' && this.currentChunkIndex === this.chunks.length - 1 && this.chunks.length > 1) {
                     this._setCardActive(this.currentChunkIndex, true);
-                    this._playChunk(this.currentChunkIndex);
+                    
+                    if (!this.isMobile) {
+                        // On desktop, auto-play with delay
+                        setTimeout(() => this._playChunk(this.currentChunkIndex), 100);
+                    } else {
+                        // On mobile, show "Tap to play" indicator
+                        const container = document.getElementById(this.containerId);
+                        if (container) {
+                            const card = container.querySelector(`[data-chunk="${this.currentChunkIndex}"]`);
+                            if (card) {
+                                const indicator = document.createElement('div');
+                                indicator.className = 'mobile-play-indicator text-xs text-blue-600 dark:text-blue-400 mt-2 text-center';
+                                indicator.textContent = '▶ Tap to play';
+                                card.appendChild(indicator);
+                                setTimeout(() => { if (indicator.parentNode) indicator.remove(); }, 5000);
+                            }
+                        }
+                    }
                 }
                 break;
             case 'complete':
@@ -255,15 +293,40 @@ export class KokoroPlayer {
         audioEl.addEventListener('play', () => {
             this._onChunkPlay(index);
         });
-        audioEl.addEventListener('ended', () => {
+          audioEl.addEventListener('ended', () => {
             const nextIdx = index + 1;
             if (nextIdx < this.chunks.length) {
                 // Next chunk is available — advance to it
-                // _onChunkPlay will fire via the 'play' event on the new audio element
                 this._setCardActive(index, false);
                 this._setCardActive(nextIdx, true);
                 this.currentChunkIndex = nextIdx;
-                this._playChunk(nextIdx);
+                
+                if (this.isMobile) {
+                    // On mobile, don't auto-play due to strict autoplay policies
+                    // Show a visual indicator that the user should tap the play button
+                    const container = document.getElementById(this.containerId);
+                    if (container) {
+                        const nextCard = container.querySelector(`[data-chunk="${nextIdx}"]`);
+                        if (nextCard) {
+                            // Remove any existing indicator
+                            const existing = nextCard.querySelector('.mobile-play-indicator');
+                            if (existing) existing.remove();
+                            
+                            const indicator = document.createElement('div');
+                            indicator.className = 'mobile-play-indicator text-xs text-blue-600 dark:text-blue-400 mt-2 text-center';
+                            indicator.textContent = '▶ Tap to play';
+                            nextCard.appendChild(indicator);
+                            
+                            // Remove after 5 seconds
+                            setTimeout(() => {
+                                if (indicator.parentNode) indicator.remove();
+                            }, 5000);
+                        }
+                    }
+                } else {
+                    // On desktop, auto-advance with delay
+                    setTimeout(() => this._playChunk(nextIdx), 300);
+                }
             } else if (this.status === 'generating') {
                 // No more chunks yet — mark as waiting so stream handler resumes
                 this.currentChunkIndex = this.chunks.length; // sentinel: "waiting for more"
@@ -290,12 +353,73 @@ export class KokoroPlayer {
         const audioEl = container.querySelector(`audio[data-chunk="${index}"]`);
         if (!audioEl) return;
         audioEl.currentTime = 0;
-        // Unmute the audio (it was muted for autoplay compatibility)
-        audioEl.muted = false;
-        // Small delay to ensure audio is fully initialized before playing
+
+        // Mobile browser audio playback requires careful handling:
+        // 1. Start muted to work around autoplay policies
+        // 2. Unmute when audio is ready to play
+        // 3. Use timeout fallback in case events don't fire reliably on mobile
+        // 4. Handle autoplay blocked errors gracefully
+        const playWhenReady = () => {
+            audioEl.muted = false;
+            audioEl.removeEventListener('canplaythrough', playWhenReady);
+            audioEl.removeEventListener('canplay', playWhenReady);
+            audioEl.play().then(() => {
+                // Success - audio is now playing
+            }).catch((err) => {
+                console.warn('play() failed:', err.name, err.message);
+                // Check if this is an autoplay blocked error
+                if (err.name === 'NotAllowedError') {
+                    this._handleAutoplayBlocked(audioEl, index);
+                } else {
+                    // Retry after a short delay for other errors
+                    setTimeout(() => audioEl.play().catch(() => {}), 100);
+                }
+            });
+        };
+
+        // Listen for both events - canplay fires earlier and is more reliable on mobile
+        audioEl.addEventListener('canplay', playWhenReady, { once: true });
+        audioEl.addEventListener('canplaythrough', playWhenReady, { once: true });
+
+        // Timeout fallback: try to play after 2 seconds even if events haven't fired
+        // This handles cases where mobile browsers don't fire ready events properly
         setTimeout(() => {
-            audioEl.play().catch(() => {});
-        }, 100);
+            if (audioEl.muted) {
+                audioEl.muted = false;
+                audioEl.removeEventListener('canplay', playWhenReady);
+                audioEl.removeEventListener('canplaythrough', playWhenReady);
+                audioEl.play().catch((err) => {
+                    if (err.name === 'NotAllowedError') {
+                        this._handleAutoplayBlocked(audioEl, index);
+                    }
+                });
+            }
+        }, 2000);
+    }
+
+    /**
+     * Handle autoplay blocked errors by showing a user-friendly message
+     * and providing a way for the user to manually start playback.
+     */
+    _handleAutoplayBlocked(audioEl, index) {
+        console.log('Autoplay was blocked. User interaction required.');
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+        const card = container.querySelector(`[data-chunk="${index}"]`);
+        if (!card) return;
+
+        // Add a visual indicator that autoplay was blocked
+        const indicator = document.createElement('div');
+        indicator.className = 'text-xs text-orange-600 dark:text-orange-400 mt-1';
+        indicator.textContent = 'Tap the play button to start audio';
+        card.appendChild(indicator);
+
+        // Remove the indicator after 5 seconds
+        setTimeout(() => {
+            if (indicator.parentNode) {
+                indicator.parentNode.removeChild(indicator);
+            }
+        }, 5000);
     }
 
     // ─── Incremental DOM Helpers ────────────────────────────────────

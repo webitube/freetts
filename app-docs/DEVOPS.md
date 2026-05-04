@@ -108,6 +108,11 @@ Currently, the project does not have an automated test suite. However, manual te
    - Clicking a chunk card seeks directly to that chunk
    - The "Download Audio" button appears after generation completes
    - No AbortErrors appear in the browser console
+4. **Mobile autoplay handling:** Test on iOS Safari and Android Chrome:
+   - Audio starts muted, "▶ Tap to play" indicator shows on chunk cards
+   - Tapping the indicator or play button unmutes and starts playback
+   - Auto-advance between chunks shows "▶ Tap to play" indicator on mobile
+   - Desktop browsers still auto-play without requiring user interaction
 4. **Engine switching:** Toggle between Web Speech and Kokoro, verify each plays correctly.
 5. **Theme toggling:** Click the theme icon and verify that light/dark modes are applied and persisted.
 6. **Export features:** Test the “Copy” and “Download .md” buttons.
@@ -178,8 +183,8 @@ Because FreeTTS is a static front‑end application, monitoring focuses on user�
 | Milkdown editor not loading in Visual mode | Bundling issue or dependency mismatch | Check that `npm install` completed successfully and all Milkdown packages match versions. |
 | Kokoro TTS never starts speaking | Model not downloaded yet (first load) | The Kokoro 82M ONNX model downloads on first use (~200 MB). Wait for "Kokoro TTS ready." status. |
 | Kokoro TTS uses WASM instead of WebGPU | Browser doesn’t support WebGPU | Falls back to WASM automatically. A `powerPreference` Chromium warning is harmless (crbug.com/369219127). |
-| TTS not speaking/highlighting (Web Speech) | Web Speech API not supported or voice not available | Use a modern browser (Chrome/Edge). Check browser permissions for speech synthesis. |
-| Built site shows blank page | Incorrect base path for hosting | Adjust `base` in `vite.config.js` to match your deployment subpath. |
+| TTS not speaking/highlighting (Web Speech) | Web Speech API not supported or voice not available | Use a modern browser (Chrome/Edge). Check browser permissions for speech synthesis. || Kokoro TTS audio muted on mobile (iOS Safari) | Mobile autoplay policy blocks unmuted playback | Expected behavior — shows "▶ Tap to play" indicator. User must tap to unmute and play. Desktop browsers auto-play normally. |
+| Kokoro TTS NotAllowedError in console | Autoplay blocked by browser (mobile or muted tab) | Shows "▶ Tap to play" indicator. User interaction required to start playback. || Built site shows blank page | Incorrect base path for hosting | Adjust `base` in `vite.config.js` to match your deployment subpath. |
 | GitHub Pages returns 404 | Repository not configured for Pages, or wrong branch | In repository Settings → Pages, set source branch to `gh‑pages` (or `main/docs`). |
 | Deployment workflow fails | Insufficient permissions | Ensure the workflow has `contents: write` permission and the `GITHUB_TOKEN` is present. |
 

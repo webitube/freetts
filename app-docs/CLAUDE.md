@@ -21,8 +21,8 @@ The base path in `vite.config.js` is set to `/freetts/` for GitHub Pages deploym
 
 FreeTTS is a vanilla JavaScript single-page app with no frontend framework. Application code lives in three files:
 
-- **`src/FreeTtsUtils.js`** (~400 lines) — app orchestration: editor init, mode switching, TTS playback coordination, theme management
-- **`src/kokoro-player.js`** (~340 lines) — chunk-based audio player class (`KokoroPlayer`) for the Kokoro TTS engine
+- **`src/FreeTtsUtils.js`** (~395 lines) — app orchestration: editor init, mode switching, TTS playback coordination, theme management
+- **`src/kokoro-player.js`** (~475 lines) — chunk-based audio player class (`KokoroPlayer`) for the Kokoro TTS engine with mobile autoplay policy handling
 - **`src/tts-worker.js`** — Web Worker that runs `kokoro-js` (ONNX Runtime) to generate audio off the main thread
 
 ### Editor Modes
@@ -57,7 +57,23 @@ The app supports two TTS engines, selected via dropdown:
   - Auto-advance is driven by the `ended` event on each audio element
   - Click any chunk card to seek directly to it
   - Merged audio can be downloaded as WAV after generation completes
+  - Mobile autoplay policy handling: detects mobile browsers via user-agent/touch points, starts audio muted, shows "Tap to play" indicators, unmutes when ready
+  - Fallback mechanisms: `canplay` event listener (fires earlier than `canplaythrough`), 2-second timeout fallback, retry logic with 100ms delay on play failures
+  - Graceful error handling for `NotAllowedError` (autoplay blocked) with `_handleAutoplayBlocked()` method
 - Chunk-by-chunk text highlighting is synced via `_onChunkPlay` override
+
+### Mobile Browser Autoplay Handling
+
+Mobile browsers (especially iOS Safari) enforce strict autoplay policies that block programmatic audio playback without user gestures. KokoroPlayer implements a comprehensive strategy to handle this:
+
+1. **Mobile detection** (`this.isMobile`): Tests user-agent string for mobile platforms or checks `navigator.maxTouchPoints > 2`
+2. **Muted start**: Audio starts muted to bypass autoplay restrictions, unmutes when `canplay` event fires
+3. **Mobile-specific behavior**:
+   - Desktop: auto-plays with 100ms delay, auto-advances chunks with 300ms delay
+   - Mobile: shows "▶ Tap to play" indicator instead of auto-playing, requires user tap to unmute and play
+4. **Event listeners**: Uses both `canplay` (earlier, more reliable) and `canplaythrough` events
+5. **Timeout fallback**: 2-second timeout for cases where events don't fire
+6. **Retry logic**: 100ms delay retry on play failures (except `NotAllowedError` which shows UI indicator)
 
 ### State
 

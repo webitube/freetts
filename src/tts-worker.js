@@ -42,9 +42,10 @@ async function main() {
 
         try {
             for await (const { text: chunkText, audio } of stream) {
+                // Explicit WAV format with correct sample rate metadata for mobile compatibility
                 self.postMessage({
                     status: 'stream',
-                    chunk: { audio: audio.toBlob(), text: chunkText },
+                    chunk: { audio: audio.toBlob({ mimeType: 'audio/wav' }), text: chunkText },
                 });
                 chunks.push(audio);
             }
@@ -69,7 +70,7 @@ async function main() {
             }
 
             const merged = new chunks[0].constructor(waveform, samplingRate);
-            self.postMessage({ status: 'complete', mergedAudio: merged.toBlob() });
+            self.postMessage({ status: 'complete', mergedAudio: merged.toBlob({ mimeType: 'audio/wav' }) });
         } catch (error) {
             self.postMessage({ status: 'error', data: error.message });
         }
