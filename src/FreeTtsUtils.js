@@ -11,7 +11,7 @@ import { KokoroPlayer } from './kokoro-player.js';
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- STATE ---
-const initialValue = `# Welcome to FreeTTS`;
+const initialValue = `# Welcome to FreeTTS\nA tramping of sea boots was heard in the entry. \nThe door was flung open, and in rolled a wild set of mariners enough.\nEnveloped in their shaggy watch coats, and with their heads muffled in woollen comforters. \nAll bedarned and ragged, and their beards stiff with icicles.\nThey seemed an eruption of bears from Labrador.\nThey had just landed from their boat, and this was the first house they entered.`;
 let currentMarkdown = initialValue;
 let milkdownEditor = null;
 let isSourceMode = true;

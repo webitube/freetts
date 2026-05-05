@@ -207,8 +207,8 @@ header p.text-gray-600 { color: #4b5563; }
 /* --- KOKORO CHUNK CARDS --- */
 /* Scrollable container for audio cards */
 #kokoro-chunk-list {
-    display: flex;
     flex-direction: column;
+    height: 500px;
     gap: 0.5rem;
     padding: 0.5rem;
     overflow-y: auto;
@@ -348,7 +348,8 @@ header p.text-gray-600 { color: #4b5563; }
 
 /* Kokoro chunk list inside viewport */
 #kokoro-chunk-list {
-    height: 100%;
+    height: 500px;
+    margin: 33px;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -376,7 +377,7 @@ header p.text-gray-600 { color: #4b5563; }
 }
 .tts-card audio {
     margin-top: 0.5rem;
-    height: 32px;
+    height: 54px;
     font-size: 0.75rem;
 }
 .tts-card .text-xs {
