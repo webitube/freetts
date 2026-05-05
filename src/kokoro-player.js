@@ -82,6 +82,14 @@ export class KokoroPlayer {
     stop() {
         this.audioPlayer.stopAll();
 
+        // Clear playing state from all cards
+        const container = document.getElementById(this.containerId);
+        if (container) {
+            container.querySelectorAll('[data-chunk].playing').forEach(card => {
+                card.classList.remove('playing');
+            });
+        }
+
         this.chunks = [];
         this.currentChunkIndex = -1;
         this.mergedBlob = null;
@@ -138,6 +146,9 @@ export class KokoroPlayer {
         if (!audioEl) return;
         audioEl.currentTime = 0;
 
+        // Mark card as playing immediately (same as _playChunk)
+        this._setCardPlaying(chunkIndex, true);
+
         const playWhenReady = () => {
             audioEl.muted = false;
             audioEl.removeEventListener('canplaythrough', playWhenReady);
@@ -175,6 +186,10 @@ export class KokoroPlayer {
         const audioEl = container.querySelector(`audio[data-chunk="${index}"]`);
         if (!audioEl) return;
         audioEl.currentTime = 0;
+
+        // Mark card as playing immediately when playback is initiated
+        // (the 'play' event doesn't fire reliably on muted audio elements)
+        this._setCardPlaying(index, true);
 
         const playWhenReady = () => {
             audioEl.muted = false;
@@ -233,9 +248,11 @@ export class KokoroPlayer {
 
     _onChunkPlay(index) {
         // Called when a chunk starts playing
+        this._setCardPlaying(index, true);
     }
 
     _onChunkEnded(index) {
+        this._setCardPlaying(index, false);
         const nextIdx = index + 1;
         if (nextIdx < this.chunks.length) {
             this._setCardActive(index, false);
@@ -298,6 +315,34 @@ export class KokoroPlayer {
                      container.querySelector(`[data-chunk="${index}"]`);
         if (card) {
             card.classList.toggle('active', active);
+        }
+    }
+
+    /**
+     * Set the playing state on a chunk card to visually indicate active playback.
+     * @param {number} index - Chunk index
+     * @param {boolean} playing - Whether the card is currently playing
+     */
+    _setCardPlaying(index, playing) {
+        const container = document.getElementById(this.containerId);
+        if (!container)
+        {
+            console.error(`_setCardPlaying(): container not found!`);
+            return;
+        }
+        else
+        {
+            //console.log(`_setCardPlaying(): index=${index}: playing=${playing}: container=${container}`);
+        }
+
+        const card = container.querySelector(`[data-chunk="${index}"]`);
+        if (card) {
+            //console.log(`_setCardPlaying(): card=${card}`);
+            card.classList.toggle('playing', playing);
+        }
+        else
+        {
+            console.error(`_setCardPlaying(): card not found!`);
         }
     }
 

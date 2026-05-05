@@ -70,6 +70,10 @@ export class ChunkRenderer {
             const container = document.getElementById(this.player.containerId);
             if (container) {
                 container.querySelectorAll('audio').forEach(a => a.pause());
+                // Clear playing state from all cards before starting new playback
+                container.querySelectorAll('[data-chunk].playing').forEach(c => {
+                    c.classList.remove('playing');
+                });
             }
             this.player._setCardActive(this.player.currentChunkIndex, false);
             this.player.currentChunkIndex = index;
