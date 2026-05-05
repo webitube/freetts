@@ -119,15 +119,29 @@ if (elements.resetSettings) {
 // Load persisted settings
 loadTTSSettings(elements);
 
-// Load Web Speech voices
-let voices = loadWebSpeechVoices(elements, window.speechSynthesis);
-if (window.speechSynthesis.onvoiceschanged !== undefined) {
-    window.speechSynthesis.onvoiceschanged = () => {
-        voices = loadWebSpeechVoices(elements, window.speechSynthesis);
-        ttsController.voices = voices;
-    };
+// Load voices for the restored engine
+let voices = [];
+const savedEngine = elements.engineSelect.value;
+if (savedEngine === 'kokoro') {
+    // Initialize Kokoro worker and load Kokoro voices
+    kokoroPlayer.workerComm.initializeWorker().then(() => {
+        if (kokoroPlayer.voices) {
+            loadKokoroVoices(elements, kokoroPlayer.voices);
+        } else {
+            elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro TTS (loading...)</option>';
+        }
+    });
+} else {
+    // Load Web Speech voices
+    voices = loadWebSpeechVoices(elements, window.speechSynthesis);
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = () => {
+            voices = loadWebSpeechVoices(elements, window.speechSynthesis);
+            ttsController.voices = voices;
+        };
+    }
+    ttsController.voices = voices;
 }
-ttsController.voices = voices;
 
 // Update pitch warning
 updatePitchWarning(elements.pitchSlider);
