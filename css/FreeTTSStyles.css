@@ -205,15 +205,33 @@ header p.text-gray-600 { color: #4b5563; }
 .dark .milkdown pre { background: #0f172a; border: 1px solid #334155; color: #f8fafc !important; }
 
 /* --- KOKORO CHUNK CARDS --- */
-/* Max-height 200px with text truncation for long chunk labels */
+/* Scrollable container for audio cards */
+#kokoro-chunk-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    overflow-y: auto;
+}
+
+/* Individual chunk card styling */
 #kokoro-chunk-list [data-chunk] {
-    max-height: 200px;
-    overflow: hidden;
-    transition: max-height 0.2s ease;
+    padding: 0.5rem;
+    border-radius: 6px;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+.dark #kokoro-chunk-list [data-chunk] {
+    background-color: #1e293b;
+    border-color: #334155;
 }
 #kokoro-chunk-list [data-chunk]:hover {
-    max-height: 300px;
+    background-color: #e5e7eb;
+    border-color: #9ca3af;
 }
+
+/* Text truncation for long chunk labels - only on the text content */
 #kokoro-chunk-list [data-chunk] .text-sm {
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -274,6 +292,20 @@ header p.text-gray-600 { color: #4b5563; }
     #editor-container { min-height: 300px !important; padding: 1rem !important; }
     #source-editor { height: 300px !important; }
     #kokoro-chunk-list { max-height: 180px !important; }
+    
+    /* Make Section 4 viewport same height as Section 3 in landscape */
+    .grid.grid-cols-1.md\:grid-cols-2 {
+        grid-template-columns: 1fr 1fr !important;
+    }
+    
+    /* Force both sections to be equal height using flex */
+    section { flex: 1 !important; min-height: 0 !important; }
+    
+    /* Audio cards container fills the viewport */
+    #audio-viewport #kokoro-chunk-list {
+        flex: 1 !important;
+        min-height: 0 !important;
+    }
 }
 
 /* Touch target sizing for mobile (minimum 44x44px) */
@@ -298,6 +330,67 @@ header p.text-gray-600 { color: #4b5563; }
     background-color: #1e293b !important; 
     color: #f1f5f9;
     border-color: #334155 !important;
+}
+
+/* --- 4-SECTION LAYOUT STYLES --- */
+/* V4: Audio viewport with min-height to prevent collapsing */
+#audio-viewport {
+    overflow-y: auto;
+    min-height: 200px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #f9fafb;
+}
+.dark #audio-viewport {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+/* Kokoro chunk list inside viewport */
+#kokoro-chunk-list {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+/* Smaller audio cards for compact viewport */
+.tts-card {
+    padding: 0.5rem;
+    border-radius: 6px;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+.dark .tts-card {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+.tts-card:hover {
+    background-color: #e5e7eb;
+    border-color: #9ca3af;
+}
+.dark .tts-card:hover {
+    background-color: #334155;
+}
+.tts-card audio {
+    margin-top: 0.5rem;
+    height: 32px;
+    font-size: 0.75rem;
+}
+.tts-card .text-xs {
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+    color: #4b5563;
+}
+.dark .tts-card .text-xs {
+    color: #cbd5e1;
+}
+.tts-card .mobile-play-indicator {
+    margin-top: 0.25rem;
+    padding: 2px 6px;
+    font-size: 0.65rem;
 }
 
 /* Specific inner padding contrast for Help Modal */

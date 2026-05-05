@@ -18,33 +18,31 @@
         };
         applyTheme();
     </script>
-  <script type="module" crossorigin src="/freetts/assets/index-Da0U-mPt.js"></script>
-  <link rel="stylesheet" crossorigin href="/freetts/assets/index-BwQHAL4Q.css">
+  <script type="module" crossorigin src="/freetts/assets/index-CCD0nDyq.js"></script>
+  <link rel="stylesheet" crossorigin href="/freetts/assets/index-DxOU0_x_.css">
 </head>
 <body class="bg-gray-50 dark:bg-slate-900 transition-colors duration-300 p-4 md:p-10 font-sans text-gray-900 dark:text-slate-200 min-h-screen">
 
-    <div class="max-w-4xl mx-auto">
-        <!-- HEADER SECTION: Forced Vertical Stack -->
-        <header class="mb-6 flex flex-col gap-4">
-            <!-- Row 1: Title and Icon Buttons -->
-            <div class="flex items-center gap-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- SECTION 1: Title/Subtitle (Fixed 80px height) -->
+        <section class="h-20 flex items-center justify-center mb-4">
+            <div class="text-center">
                 <h1 class="text-3xl font-bold text-gray-900 dark:text-white">FreeTTS Markdown Editor</h1>
-                <div class="flex items-center gap-2">
-                    <button id="help-toggle" title="Editor Guide & Markdown Help" class="text-gray-400 hover:text-blue-600 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                    </button>
-                    <button id="theme-toggle" class="p-1.5 rounded-md text-gray-400 hover:text-blue-600 transition">
-                        <svg id="theme-sun" class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-                        <svg id="theme-moon" class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                    </button>
-                </div>
+                <p class="text-gray-600 dark:text-slate-400 text-sm mt-1">Lightweight Markdown Editor with Word-Aware TTS Tracking.</p>
+                <button id="theme-toggle" class="p-1.5 rounded-md text-gray-400 hover:text-blue-600 transition">
+                    <svg id="theme-sun" class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    <svg id="theme-moon" class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
             </div>
+        </section>
 
-            <!-- Row 2: Subtitle -->
-            <p class="text-gray-600 dark:text-slate-400 text-sm -mt-3">Lightweight Markdown Editor with Word-Aware TTS Tracking.</p>
-            
-            <!-- Row 3: Control Bar -->
+        <!-- SECTION 2: Control Buttons (Fixed 120px height) -->
+        <section class="h-32 flex flex-col gap-3 mb-4">
+            <!-- Line 1: Speech Config Buttons -->
             <div class="flex flex-wrap items-center gap-3">
+                <button id="help-toggle" title="Editor Guide & Markdown Help" class="text-gray-400 hover:text-blue-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </button>
                 <select id="engine-select" title="Speech Engine" class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs outline-none">
                     <option value="webspeech">Web Speech</option>
                     <option value="kokoro">Kokoro TTS</option>
@@ -65,8 +63,15 @@
                     <input id="tts-pitch" type="range" min="-2" max="2" step="0.5" value="0" class="w-20 accent-blue-600">
                     <span id="pitch-val" class="text-xs text-gray-500 dark:text-slate-400 w-6">0</span>
                 </div>
-                <span id="pitch-warning" class="hidden text-xs text-amber-500"></span>
 
+                <!-- Reset Button -->
+                <button id="reset-settings" class="text-xs text-gray-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 underline ml-auto">
+                    Reset Settings
+                </button>
+            </div>
+
+            <!-- Line 2: Play/Stop + View Toggle -->
+            <div class="flex flex-wrap items-center gap-3">
                 <div class="flex items-center bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-full px-2 py-1 shadow-sm">
                     <button id="tts-toggle" title="Play Selection or from Cursor" class="tts-btn text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700">
                         <svg id="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -79,37 +84,24 @@
                     <button id="view-visual" class="px-4 py-1.5 text-sm font-medium rounded-md text-gray-600 dark:text-slate-400 hover:text-gray-900 transition">Visual</button>
                 </div>
             </div>
-        </header>
+        </section>
 
-        <!-- MAIN EDITOR AREA -->
-        <div id="editor-container" class="shadow-sm relative source-mode">
-            <div id="app"></div>
-            <textarea id="source-editor" spellcheck="false" placeholder="Markdown source code..."></textarea>
-        </div>
+        <!-- SECTIONS 3 & 4: Equal 50/50 split with flex -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-[calc(100vh-300px)]">
+            <!-- SECTION 3: Text Entry (50% of remaining space) -->
+            <section class="h-full flex flex-col">
+                <div id="editor-container" class="flex-1 shadow-sm relative source-mode">
+                    <div id="app"></div>
+                    <textarea id="source-editor" spellcheck="false" placeholder="Markdown source code..."></textarea>
+                </div>
+            </section>
 
-        <!-- KOKORO TTS CHUNK LIST -->
-        <div id="kokoro-chunk-list" class="hidden mt-4 max-h-[320px] overflow-y-auto space-y-1"></div>
-
-        <!-- FOOTER ACTIONS -->
-        <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex gap-2">
-                <button id="get-markdown" class="bg-gray-800 dark:bg-slate-700 text-white px-4 py-2 rounded text-sm flex items-center gap-2">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    Copy
-                </button>
-                <button id="download-markdown" class="bg-blue-600 text-white px-4 py-2 rounded text-sm flex items-center gap-2">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Download .md
-                </button>
-                <button id="download-audio" class="bg-green-600 text-white px-4 py-2 rounded text-sm flex items-center gap-2 hidden">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Download Audio
-                </button>
-            </div>
-            <div class="text-right">
-                <span id="tts-status" class="text-xs font-medium text-blue-500 block h-4"></span>
-                <span id="status-msg" class="text-xs text-gray-400">Ready.</span>
-            </div>
+            <!-- SECTION 4: Kokoro Audio Viewport (50% of remaining space) -->
+            <section class="h-full flex flex-col">
+                <div id="audio-viewport" class="h-full flex-1 overflow-hidden">
+                    <div id="kokoro-chunk-list" class="h-full"></div>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -179,6 +171,28 @@
             <div class="p-4 border-t dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 text-center rounded-b-xl">
                 <button id="help-close-footer" class="bg-gray-800 dark:bg-slate-700 text-white px-8 py-2 rounded-lg font-medium">Close Guide</button>
             </div>
+        </div>
+    </div>
+
+    <!-- FOOTER ACTIONS -->
+    <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex gap-2">
+            <button id="get-markdown" class="bg-gray-800 dark:bg-slate-700 text-white px-4 py-2 rounded text-sm flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                Copy
+            </button>
+            <button id="download-markdown" class="bg-blue-600 text-white px-4 py-2 rounded text-sm flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download .md
+            </button>
+            <button id="download-audio" class="bg-green-600 text-white px-4 py-2 rounded text-sm flex items-center gap-2 hidden">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download Audio
+            </button>
+        </div>
+        <div class="text-right">
+            <span id="tts-status" class="text-xs font-medium text-blue-500 block h-4"></span>
+            <span id="status-msg" class="text-xs text-gray-400">Ready.</span>
         </div>
     </div>
 

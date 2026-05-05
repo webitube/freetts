@@ -270,10 +270,10 @@ export class KokoroPlayer {
     _createChunkCard(chunk, index) {
         const card = document.createElement('div');
         const isActive = index === this.currentChunkIndex;
-        card.className = `p-3 rounded-lg transition-all cursor-pointer ${
+        card.className = `tts-card transition-all cursor-pointer ${
             isActive
-                ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
-                : 'bg-gray-50 dark:bg-slate-800 border border-transparent hover:bg-blue-50 dark:hover:bg-slate-700'
+                ? 'border border-blue-200 dark:border-blue-800'
+                : 'border border-transparent hover:bg-blue-50 dark:hover:bg-slate-700'
         }`;
         card.setAttribute('data-chunk', index);
 
@@ -292,7 +292,7 @@ export class KokoroPlayer {
 
         // Text label
         const textEl = document.createElement('p');
-        textEl.className = 'text-sm mb-2';
+        textEl.className = 'text-xs mb-1';
         textEl.textContent = chunk.text;
 
         // Audio controls
@@ -300,10 +300,10 @@ export class KokoroPlayer {
         audioEl.setAttribute('data-chunk', index);
         audioEl.src = URL.createObjectURL(chunk.audio);
         audioEl.controls = true;
-        audioEl.playsInline = true;  // iOS Safari: play inline, not fullscreen
-        audioEl.preload = 'auto';    // Preload for better mobile playback quality
-        audioEl.muted = true;        // Required for autoplay to work on many mobile browsers
-        audioEl.className = 'w-full mt-1';
+        audioEl.playsInline = true;
+        audioEl.preload = 'auto';
+        audioEl.muted = true;
+        audioEl.className = 'w-full mt-0.5';
 
         // Auto-play is handled by _playChunk
 
