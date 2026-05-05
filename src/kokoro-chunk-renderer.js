@@ -61,7 +61,7 @@ export class ChunkRenderer {
         card.className = `tts-card transition-all cursor-pointer ${
             isActive
                 ? 'border border-blue-200 dark:border-blue-800'
-                : 'border border-transparent hover:bg-blue-50 dark:hover:bg-slate-700'
+                : 'border border-transparent hover:bg-blue-100 dark:hover:bg-blue-900'
         }`;
         card.setAttribute('data-chunk', index);
 

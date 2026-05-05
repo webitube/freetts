@@ -220,8 +220,8 @@ header p.text-gray-600 { color: #4b5563; }
 #kokoro-chunk-list [data-chunk] {
     margin: 0px, 20px, 0px, 20px;
     border-radius: 6px;
-    background-color: #f3f4f6;
-    border: 1px solid #e5e7eb;
+    background-color: #d0d1d1;
+    border: 1px solid #8b8b8b;
     transition: all 0.2s ease;
 }
 .dark #kokoro-chunk-list [data-chunk] {
@@ -229,8 +229,12 @@ header p.text-gray-600 { color: #4b5563; }
     border-color: #334155;
 }
 #kokoro-chunk-list [data-chunk]:hover {
-    background-color: #e5e7eb;
-    border-color: #9ca3af;
+    background-color: #979797;
+    border-color: #5e7ea3;
+}
+.dark #kokoro-chunk-list [data-chunk]:hover {
+    background-color: #1e3a5f;
+    border-color: #3b82f6;
 }
 
 /* Text truncation for long chunk labels - only on the text content */
@@ -372,11 +376,12 @@ header p.text-gray-600 { color: #4b5563; }
     border-color: #334155;
 }
 .tts-card:hover {
-    background-color: #e5e7eb;
-    border-color: #9ca3af;
+    background-color: #dbeafe;
+    border-color: #93c5fd;
 }
 .dark .tts-card:hover {
-    background-color: #334155;
+    background-color: #1e3a5f;
+    border-color: #3b82f6;
 }
 .tts-card audio {
     margin-top: 0.5rem;
