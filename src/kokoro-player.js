@@ -178,6 +178,37 @@ export class KokoroPlayer {
         }, 3000);
     }
 
+    // ─── Scroll Helpers ──────────────────────────────────────────────
+
+    /**
+     * Scroll the container so the specified chunk card is visible in the viewport.
+     * Uses a proportional scroll position based on the chunk's index relative to
+     * the total number of chunks, falling back to scrollIntoView if that fails.
+     * @param {number} index - Chunk index to scroll to
+     */
+    _scrollToChunk(index) {
+        const container = document.getElementById(this.containerId);
+        if (!container) return;
+
+        const totalChunks = this.chunks.length;
+        if (totalChunks === 0) return;
+
+        // Calculate proportional scroll position (0.0 to 1.0)
+        const ratio = index / (totalChunks - 1 || 1);
+
+        // Target element for scrolling
+        const targetCard = container.querySelector(`[data-chunk="${index}"]`);
+
+        if (targetCard) {
+            // Try scrollIntoView first (smooth, browser-optimized)
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            // Fallback: set scroll position proportionally
+            const maxScroll = container.scrollHeight - container.clientHeight;
+            container.scrollTop = Math.round(maxScroll * ratio);
+        }
+    }
+
     // ─── Playback Helpers ────────────────────────────────────────────
 
     _playChunk(index) {
@@ -186,6 +217,9 @@ export class KokoroPlayer {
         const audioEl = container.querySelector(`audio[data-chunk="${index}"]`);
         if (!audioEl) return;
         audioEl.currentTime = 0;
+
+        // Scroll the playing card into view
+        this._scrollToChunk(index);
 
         // Mark card as playing immediately when playback is initiated
         // (the 'play' event doesn't fire reliably on muted audio elements)
