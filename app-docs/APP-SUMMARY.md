@@ -12,9 +12,9 @@ Three core source files:
 
 | File | Purpose |
 |---|---|
-| **FreeTtsUtils.js** (~395 lines) | App orchestration — editor init, mode switching, TTS playback, theme management |
-| **kokoro-player.js** (~475 lines) | Chunk-based audio player (`KokoroPlayer`) for neural TTS with mobile autoplay policy handling |
-| **tts-worker.js** | Web Worker running `kokoro-js` (ONNX Runtime) for offline neural TTS |
+| **FreeTtsUtils.js** (~432 lines) | App orchestration — editor init, mode switching, TTS playback, theme management, settings persistence |
+| **kokoro-player.js** (~441 lines) | Chunk-based audio player (`KokoroPlayer`) for neural TTS with mobile autoplay policy handling, incremental card rendering |
+| **tts-worker.js** (~73 lines) | Web Worker running `kokoro-js` (ONNX Runtime) with `TextSplitterStream` for streaming TTS generation |
 
 ### Key Features
 
@@ -22,11 +22,14 @@ Three core source files:
   - **Reveal Codes** — raw Markdown textarea with visible syntax
   - **Visual** — WYSIWYG editor via [Milkdown](https://milkdown.dev/) framework
 - **Two TTS engines:**
-  - **Web Speech API** — uses system voices, strips Markdown syntax, word-level highlighting, **pitch control available on all platforms**
-  - **Kokoro TTS** — neural TTS via ONNX Runtime Web (WebGPU/WASM), runs in a Web Worker, chunk-based audio with card UI, mobile autoplay policy handling (muted start + tap-to-play indicators), **pitch control available on all platforms**
+  - **Web Speech API** — uses system voices, strips Markdown syntax (`#`, `*`, `_`, `~`, `` ` ``, `[]()`, `|`), word-level highlighting, pitch control available on all platforms (non-Safari: `1 + pitch/12`; Safari omits pitch)
+  - **Kokoro TTS** — neural TTS via ONNX Runtime Web (WebGPU/WASM), runs in a Web Worker with `TextSplitterStream` streaming, chunk-based audio with card UI, mobile autoplay policy handling (muted start + tap-to-play indicators), pitch control available on all platforms. **Kokoro is disabled on mobile** with an info indicator shown next to the engine selector. WebGPU uses `fp32` dtype, WASM uses `q8` dtype.
 - **Dark/light theme** persisted via `localStorage`
 - **Responsive** design with Tailwind CSS
 - **Selection-aware playback** — speak from cursor position or selected text
+- **Keyboard shortcut** — `Ctrl+Enter` (or `Cmd+Enter`) toggles playback
+- **Settings persistence** — engine, voice, speed, pitch saved to localStorage under key `freetts-settings`; reset via "Reset Settings" button
+- **Dark/light theme** persisted via `localStorage` (also respects `prefers-color-scheme`)
 
 ### Dependencies
 

@@ -21,9 +21,9 @@ The base path in `vite.config.js` is set to `/freetts/` for GitHub Pages deploym
 
 FreeTTS is a vanilla JavaScript single-page app with no frontend framework. Application code lives in three files:
 
-- **`src/FreeTtsUtils.js`** (~395 lines) — app orchestration: editor init, mode switching, TTS playback coordination, theme management
-- **`src/kokoro-player.js`** (~475 lines) — chunk-based audio player class (`KokoroPlayer`) for the Kokoro TTS engine with mobile autoplay policy handling
-- **`src/tts-worker.js`** — Web Worker that runs `kokoro-js` (ONNX Runtime) to generate audio off the main thread
+- **`src/FreeTtsUtils.js`** (~432 lines) — app orchestration: editor init, mode switching, TTS playback coordination, theme management, settings persistence
+- **`src/kokoro-player.js`** (~441 lines) — chunk-based audio player class (`KokoroPlayer`) for the Kokoro TTS engine with mobile autoplay policy handling, incremental card rendering and auto-advance logic
+- **`src/tts-worker.js`** (~73 lines) — Web Worker that runs `kokoro-js` (ONNX Runtime) with `TextSplitterStream` for streaming TTS generation
 
 ### Editor Modes
 
@@ -39,28 +39,32 @@ Mode switching syncs content between the textarea and Milkdown via its `replaceA
 The app supports two TTS engines, selected via dropdown:
 
 #### 1. Web Speech API (`SpeechSynthesis`)
-- Markdown syntax is stripped before speaking using `cleanMarkdown()` regex
+- Markdown syntax is stripped before speaking using `cleanMarkdown()` regex (removes `#`, `*`, `_`, `~`, `` ` ``, link syntax `[]()`, and `|`)
 - Word-level highlighting uses `SpeechSynthesisUtterance` boundary events (`e.name === 'word'`)
 - In Reveal Codes mode, word highlighting is calculated by character offsets on the textarea (`setSelectionRange`)
-- In Visual mode, a `TreeWalker` traverses DOM text nodes to find and highlight words
+- In Visual mode, a `TreeWalker` traverses DOM text nodes to find and highlight words via `highlightVisualWord()`
+- Pitch conversion: `1 + parseInt(pitchSlider.value) / 12` (non-Safari); Safari omits pitch entirely
 - TTS can start from a cursor position or text selection
-- **Pitch slider is now available on all platforms and engines** (Safari/Firefox restrictions removed)
+- **Pitch slider is available on all platforms and engines**, range -2 to +2, step 0.5. Safari Web Speech omits pitch (`if (!isSafari)`).
 
 #### 2. Kokoro TTS (`kokoro-js`)
 - Neural TTS engine running via ONNX Runtime Web in a Web Worker (`src/tts-worker.js`)
 - **WebGPU detection**: Main thread detects WebGPU availability (not available in worker context) and passes result to worker via `{ status: 'init', useWebGPU }` message
+- **Mobile Kokoro disable**: When Kokoro engine is selected on mobile (`isMobile`), the engine dropdown disables the Kokoro option and shows a "Kokoro disabled on mobile" info indicator next to the selector
 - Model loaded from Hugging Face (`onnx-community/Kokoro-82M-v1.0-ONNX`) on first use
-- Text is split into chunks and streamed back to the main thread as audio blobs
+- Text is split into chunks using `TextSplitterStream` and streamed back to the main thread as WAV audio blobs
+- **Device selection**: WebGPU uses `fp32` dtype, WASM uses `q8` dtype
 - **KokoroPlayer** renders each chunk as an independent `<audio>` element with controls
-  - Cards append incrementally to the DOM — existing playback is never interrupted
-  - Active chunk is highlighted with a blue border; styling updates are targeted (not full DOM rebuilds)
+  - Cards append incrementally to the DOM via `_appendChunkCard()` — existing playback is never interrupted
+  - Active chunk is highlighted with a blue border and blue background; styling updates are targeted via `_setCardActive()` (not full DOM rebuilds)
   - Auto-advance is driven by the `ended` event on each audio element
-  - Click any chunk card to seek directly to it
-  - Merged audio can be downloaded as WAV after generation completes
-  - Mobile autoplay policy handling: detects mobile browsers via user-agent/touch points, starts audio muted, shows "Tap to play" indicators, unmutes when ready
+  - Click any chunk card to seek directly to it (pauses all audio, plays the clicked chunk)
+  - Merged audio can be downloaded as WAV via `downloadMerged()` after generation completes
+  - Mobile autoplay policy handling: detects mobile browsers via user-agent/touch points, starts audio muted, shows "▶ Tap to play" indicators, unmutes when ready
   - Fallback mechanisms: `canplay` event listener (fires earlier than `canplaythrough`), 2-second timeout fallback, retry logic with 100ms delay on play failures
   - Graceful error handling for `NotAllowedError` (autoplay blocked) with `_handleAutoplayBlocked()` method
-- Chunk-by-chunk text highlighting is synced via `_onChunkPlay` override
+  - Mobile behavior: shows "Tap to play" indicator on auto-advance; desktop auto-plays with 300ms delay
+- Chunk-by-chunk text highlighting is synced via `_onChunkPlay` override (set externally in `FreeTtsUtils.js`)
 
 ### Mobile Browser Autoplay Handling
 
@@ -79,9 +83,15 @@ Mobile browsers (especially iOS Safari) enforce strict autoplay policies that bl
 
 Managed via simple module-level variables in `src/FreeTtsUtils.js` — no framework state management. Key globals:
 - `currentMarkdown`, `milkdownEditor`, `isSourceMode`
-- `isSpeaking`, `activeEngine` (`'webspeech'` | `'kokoro'`)
+- `isSpeaking`, `speechOffsetStart`, `activeEngine` (`'webspeech'` | `'kokoro'`)
 - `kokoroPlayer` (KokoroPlayer instance), `kokoroTextToSpeak`, `kokoroStartOffset`
+- `voices` (Web Speech voices array), `isSafari`, `isFirefox`, `isMobile` (browser detection)
 - SpeechSynthesis voices array and pitch/speed slider values
+- `STORAGE_KEY = 'freetts-settings'` — localStorage persistence for engine, voice, speed, pitch
+
+### Settings Persistence
+
+TTS settings (engine, voice, speed, pitch) are saved to localStorage under key `freetts-settings`. The `saveTTSSettings()`, `loadTTSSettings()`, and `resetTTSSettings()` functions manage this. Settings are loaded automatically before playback via `togglePlayback()`.
 
 ### Styling
 
