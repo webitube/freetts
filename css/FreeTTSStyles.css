@@ -213,7 +213,7 @@ header p.text-gray-600 { color: #4b5563; }
     gap: 0.5rem;
     padding: 10px;
     overflow-y: auto;
-    border: 1px dashed #3b82f6;
+    background-color: #0f172a;
 }
 
 /* Individual chunk card styling */
