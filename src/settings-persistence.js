@@ -27,8 +27,12 @@ function getSettings()
 export function getSavedVoice()
 {
     const settings = getSettings();
-    if (settings) {
-        const currentEngine = settings.engine || DEFAULT_SETTINGS.engine;
+    //console.log(`settings=${JSON.stringify(settings)}`);
+    let currentEngine = DEFAULT_SETTINGS.engine;
+    if (settings != undefined && settings.voices != undefined)
+    {
+        currentEngine = settings.engine;
+        //console.log(`currentEngine=${currentEngine}, voices=${JSON.stringify(settings.voices)}`);
         return settings.voices[currentEngine];
     }
     return DEFAULT_SETTINGS.voices[currentEngine];

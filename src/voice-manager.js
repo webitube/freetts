@@ -30,6 +30,13 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
         }
         elements.voiceSelect.value = resolvedVoice;
     }
+    else
+    {
+        // No saved voice — default to the first available voice
+        if (voices.length > 0) {
+            elements.voiceSelect.value = voices[0].name;
+        }
+    }
     return voices;
 }
 
@@ -51,6 +58,14 @@ export function loadKokoroVoices(elements, kokoroVoices, savedVoice) {
     if (savedVoice !== undefined && savedVoice !== '') {
         //console.log(`loadKokoroVoices():2: savedVoice=${savedVoice}`);
         elements.voiceSelect.value = savedVoice;
+    }
+    else
+    {
+        // No saved voice — default to the first available voice
+        const firstKey = Object.keys(kokoroVoices)[0];
+        if (firstKey) {
+            elements.voiceSelect.value = firstKey;
+        }
     }
     //console.log(`loadKokoroVoices():3: savedVoice=${savedVoice}`);
 }
