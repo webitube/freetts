@@ -19,6 +19,17 @@ import { UIManager } from './kokoro-ui-manager.js';
 import { ChunkManager } from './kokoro-chunk-manager.js';
 import { ChunkRenderer } from './kokoro-chunk-renderer.js';
 
+import {
+    debugLog,
+    debugLogEnd,
+    debugWarn,
+    debugWarnEnd,
+    debugError,
+    debugErrorEnd
+} from './debug-log.js'
+
+
+
 export class KokoroPlayer {
     /**
      * @param {string} containerId - ID of the DOM container for chunk list
@@ -260,7 +271,7 @@ export class KokoroPlayer {
     }
 
     _handleAutoplayBlocked(audioEl, index) {
-        console.log('Autoplay was blocked. User interaction required.');
+        console.warn('Autoplay was blocked. User interaction required.');
         const container = document.getElementById(this.containerId);
         if (!container) return;
         const card = container.querySelector(`[data-chunk="${index}"]`);
@@ -366,12 +377,12 @@ export class KokoroPlayer {
         }
         else
         {
-            //console.log(`_setCardPlaying(): index=${index}: playing=${playing}: container=${container}`);
+            debugLog(`_setCardPlaying(): index=${index}: playing=${playing}: container=${container}`);
         }
 
         const card = container.querySelector(`[data-chunk="${index}"]`);
         if (card) {
-            //console.log(`_setCardPlaying(): card=${card}`);
+            debugLog(`_setCardPlaying(): card=${card}`);
             card.classList.toggle('playing', playing);
         }
         else

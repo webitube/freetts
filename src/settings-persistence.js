@@ -4,6 +4,20 @@
  */
 const STORAGE_KEY = 'freetts-settings';
 
+import {
+    getDebugMode,
+    setDebugMode
+} from './global-switches.js'
+
+import {
+    debugLog,
+    debugLogEnd,
+    debugWarn,
+    debugWarnEnd,
+    debugError,
+    debugErrorEnd
+} from './debug-log.js'
+
 /**
  * Default settings values
  * @type {Object}
@@ -19,23 +33,44 @@ const DEFAULT_SETTINGS = {
 };
 
 
+function hasSettings()
+{
+    return localStorage.getItem(STORAGE_KEY) != undefined;
+}
+
+export function saveIfNoSettings(elements)
+{
+    debugLog(`hasSettings(): ${hasSettings()}`);
+    if (!hasSettings())
+    {
+        saveTTSSettings(elements);
+    }
+}
+
 function getSettings()
 {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
 }
 
-export function getSavedVoice()
+export function getSavedVoice(engine)
 {
     const settings = getSettings();
-    //console.log(`settings=${JSON.stringify(settings)}`);
-    let currentEngine = DEFAULT_SETTINGS.engine;
-    if (settings != undefined && settings.voices != undefined)
+    if (settings != undefined && settings.voices != undefined && engine != undefined)
     {
-        currentEngine = settings.engine;
-        //console.log(`currentEngine=${currentEngine}, voices=${JSON.stringify(settings.voices)}`);
-        return settings.voices[currentEngine];
+        return settings.voices[engine];
     }
-    return DEFAULT_SETTINGS.voices[currentEngine];
+    return DEFAULT_SETTINGS.voices[engine];
+}
+
+export function setSavedVoice(engine, savedVoice)
+{
+    const settings = getSettings();
+    if (settings != undefined && settings.voices != undefined && engine != undefined && savedVoice != undefined && savedVoice != "")
+    {
+        settings.voices[engine] = savedVoice;
+        return;
+    }
+    console.warn(`setSavedVoice(): savedVoice=${savedVoice}: can't save because settings is undefined or settings.voices is undefined. Has the localStorage for this app already been saved?`);
 }
 
 /**
@@ -45,7 +80,7 @@ export function getSavedVoice()
 export function saveTTSSettings(elements, saveEngineOnly = false) {
     const currentEngine = elements.engineSelect.value;
     const savedSettings = getSettings();
-    //console.log(`saveTTSSettings():BEGIN: saveEngineOnly=${saveEngineOnly}: settings=${JSON.stringify(savedSettings)}`)
+    debugLog(`saveTTSSettings():BEGIN: saveEngineOnly=${saveEngineOnly}: settings=${JSON.stringify(savedSettings)}`)
     
     // Load current voices
     const voices = savedSettings.voices || { webspeech: '', kokoro: '' };
@@ -64,7 +99,7 @@ export function saveTTSSettings(elements, saveEngineOnly = false) {
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    //console.log(`saveTTSSettings():END: saveEngineOnly=${saveEngineOnly}: settings=${JSON.stringify(settings)}`)
+    debugLog(`saveTTSSettings():END: saveEngineOnly=${saveEngineOnly}: settings=${JSON.stringify(settings)}`)
 }
 
 /**
@@ -77,7 +112,7 @@ export function loadTTSSettings(elements) {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             const settings = JSON.parse(saved);
-            //console.log(`loadTTSSettings(): settings=${saved}`);
+            debugLog(`loadTTSSettings(): settings=${saved}`);
 
             const currentEngine = settings.engine || DEFAULT_SETTINGS.engine;
             // Restore engine

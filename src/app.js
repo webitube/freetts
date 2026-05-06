@@ -1,3 +1,18 @@
+import {
+    getDebugMode,
+    setDebugMode
+} from './global-switches.js'
+
+import {
+    debugLog,
+    debugLogEnd,
+    debugWarn,
+    debugWarnEnd,
+    debugError,
+    debugErrorEnd
+} from './debug-log.js'
+
+
 import { EditorManager } from './editor-manager.js';
 import { TTSController } from './tts-controller.js';
 import { KokoroPlayer } from './kokoro-player.js';
@@ -6,7 +21,8 @@ import {
     saveTTSSettings, 
     loadTTSSettings, 
     resetTTSSettings,
-    getSavedVoice
+    getSavedVoice,
+    saveIfNoSettings
 } from './settings-persistence.js';
 import { 
     initThemeToggle, 
@@ -17,8 +33,12 @@ import {
 import { 
     loadWebSpeechVoices, 
     loadKokoroVoices, 
-    updatePitchWarning 
+    updatePitchWarning
 } from './voice-manager.js';
+
+
+setDebugMode(true);
+debugLog(`app.js: BEGIN...`);
 
 // Wait for DOM to be fully loaded before accessing elements
 document.addEventListener('DOMContentLoaded', () => {
@@ -128,7 +148,7 @@ const savedSettings = loadTTSSettings(elements);
 // Load voices for the restored engine
 let voices = [];
 const savedEngine = elements.engineSelect.value;
-const savedVoice = getSavedVoice();
+const savedVoice = getSavedVoice(savedEngine);
 if (savedEngine === 'kokoro') {
     // Initialize Kokoro worker and load Kokoro voices
     kokoroPlayer.workerComm.initializeWorker().then(() => {
@@ -142,9 +162,12 @@ if (savedEngine === 'kokoro') {
     // Load Web Speech voices
     voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedVoice);
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        debugLog(`WEBSPEECH VOICES LOADING...`, 'Load Web Speech voices')
         window.speechSynthesis.onvoiceschanged = () => {
+            debugLogEnd(`WEBSPEECH VOICES LOADED.`, 'Load Web Speech voices')
             voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedSettings.voice);
             ttsController.voices = voices;
+            saveIfNoSettings(elements);
         };
     }
     ttsController.voices = voices;
@@ -158,8 +181,8 @@ elements.engineSelect.onchange = () => {
     const engine = elements.engineSelect.value;
     ttsController.setActiveEngine(engine);
     saveTTSSettings(elements, true);
-    const savedVoice = getSavedVoice();
-    //console.log(`engineSelect.onchange(): savedVoice=${savedVoice}`);
+    const savedVoice = getSavedVoice(engine);
+    debugLog(`engineSelect.onchange(): savedVoice=${savedVoice}`);
     
     if (engine === 'kokoro') {
         // Mobile Kokoro UX: Show info message and disable Kokoro on mobile
@@ -185,13 +208,21 @@ elements.engineSelect.onchange = () => {
             return;
         }
 
-        //console.log(`webgpu=${navigator.gpu}`);
+        debugLog(`webgpu=${navigator.gpu}`);
+        debugLog(`KOKORO VOICES: LOADING...`, 'kokoroPlayer.workerComm.initializeWorker()');
+
+        if (savedVoice == undefined || savedVoice == "")
+        {
+            elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro: LOADING</option>';
+        }
         kokoroPlayer.workerComm.initializeWorker().then(() => {
+            debugLogEnd(`KOKORO VOICES: LOADED`, 'kokoroPlayer.workerComm.initializeWorker()');
             if (kokoroPlayer.voices) {
                 loadKokoroVoices(elements, kokoroPlayer.voices, savedVoice);
             } else {
                 // Fallback: show placeholder
-                elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro TTS (loading...)</option>';
+                elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro: INIT ERROR</option>';
+                console.error(`elements.engineSelect.onchange(): Can't load Kokoro TTS voices. Voice array is empty.`);
             }
         });
     } else {
@@ -269,3 +300,6 @@ document.getElementById('download-audio').onclick = () => {
     kokoroPlayer.downloadMerged();
 };
 });
+
+
+debugLog(`app.js: END.`);

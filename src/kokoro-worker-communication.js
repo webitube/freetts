@@ -3,6 +3,17 @@
  * including initialization, message handling, and error management.
  */
 
+import {
+    debugLog,
+    debugLogEnd,
+    debugWarn,
+    debugWarnEnd,
+    debugError,
+    debugErrorEnd
+} from './debug-log.js'
+
+
+
 /**
  * WorkerCommunication manages Web Worker communication for Kokoro TTS
  */
@@ -22,7 +33,7 @@ export class WorkerCommunication {
      * @returns {Promise<boolean>} Whether WebGPU is available
      */
     async detectWebGPU() {
-        console.log(`webgpu=${navigator.gpu}`);
+        debugLog(`webgpu=${navigator.gpu}`);
         if (!navigator.gpu) return false;
         try {
             const adapter = await navigator.gpu.requestAdapter();

@@ -3,6 +3,26 @@
  * Web Speech API and Kokoro TTS engines.
  */
 
+import {
+    saveIfNoSettings, 
+    setSavedVoice
+} from "./settings-persistence";
+
+import {
+    getDebugMode,
+    setDebugMode,
+} from './global-switches.js'
+
+import {
+    debugLog,
+    debugLogEnd,
+    debugWarn,
+    debugWarnEnd,
+    debugError,
+    debugErrorEnd,
+} from './debug-log.js'
+
+
 /**
  * Load Web Speech voices and populate voice selector
  * @param {Object} elements - DOM elements object
@@ -32,9 +52,12 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
     }
     else
     {
-        // No saved voice — default to the first available voice
+        // No saved voice — default to the first available voice.
+        // Then, update the local storage for the currently selected engine.
         if (voices.length > 0) {
             elements.voiceSelect.value = voices[0].name;
+            const currentEngine = elements.engineSelect.value;
+            setSavedVoice(currentEngine, elements.voiceSelect.value);
         }
     }
     return voices;
@@ -47,7 +70,7 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
  * @param {string} [savedVoice] - Previously saved voice to restore
  */
 export function loadKokoroVoices(elements, kokoroVoices, savedVoice) {
-    //console.log(`loadKokoroVoices():1: savedVoice=${savedVoice}`);
+    debugLog(`loadKokoroVoices():1: savedVoice=${savedVoice}`);
     elements.voiceSelect.innerHTML = Object.entries(kokoroVoices)
         .map(([key, v]) => {
             const locale = v.language === 'en-us' ? 'American' : 'British';
@@ -56,7 +79,7 @@ export function loadKokoroVoices(elements, kokoroVoices, savedVoice) {
         .join('');
     // Restore saved voice selection after populating options
     if (savedVoice !== undefined && savedVoice !== '') {
-        //console.log(`loadKokoroVoices():2: savedVoice=${savedVoice}`);
+        debugLog(`loadKokoroVoices():2: savedVoice=${savedVoice}`);
         elements.voiceSelect.value = savedVoice;
     }
     else
@@ -65,9 +88,12 @@ export function loadKokoroVoices(elements, kokoroVoices, savedVoice) {
         const firstKey = Object.keys(kokoroVoices)[0];
         if (firstKey) {
             elements.voiceSelect.value = firstKey;
+            const currentEngine = elements.engineSelect.value;
+            setSavedVoice(currentEngine, elements.voiceSelect.value);
         }
     }
-    //console.log(`loadKokoroVoices():3: savedVoice=${savedVoice}`);
+    saveIfNoSettings(elements);
+    debugLog(`loadKokoroVoices():3: savedVoice=${savedVoice}`);
 }
 
 /**
