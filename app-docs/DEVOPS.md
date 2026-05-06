@@ -6,6 +6,14 @@ This document covers building, testing, deployment, and infrastructure for the F
 
 FreeTTS is a single‑page web application built with vanilla JavaScript and uses Vite as the build tool. The application features a hybrid Markdown editor (Milkdown) and a dual Text‑to‑Speech engine: the native Web Speech API and Kokoro TTS (a neural TTS engine powered by `kokoro-js` and ONNX Runtime Web, running in a Web Worker). The project is designed to be lightweight, portable, and easy to integrate.
 
+**Source structure (16 modular files in `src/`, ~1803 total lines):**
+- **Entry:** `app.js` (~272 lines) — initializes all modules, handles DOMContentLoaded, sets up KokoroPlayer callbacks
+- **Editor:** `editor-manager.js` (~104 lines) — `EditorManager` class: Milkdown init, mode switching
+- **TTS:** `tts-controller.js` (~177 lines) — `TTSController` class: playback logic for both engines
+- **Kokoro:** `kokoro-player.js` (~347), `kokoro-audio-player.js` (~78), `kokoro-chunk-manager.js` (~43), `kokoro-chunk-renderer.js` (~113), `kokoro-ui-manager.js` (~87), `kokoro-worker-communication.js` (~150)
+- **Worker:** `tts-worker.js` (~73 lines) — Web Worker running kokoro-js + onnxruntime-web
+- **Shared:** `settings-persistence.js` (~154), `voice-manager.js` (~98), `ui-manager.js` (~90), `highlighting-utils.js` (~72), `debug-log.js` (~95), `global-switches.js` (~9)
+
 **Key technology stack:**
 - **Build tool:** Vite
 - **Editor framework:** Milkdown (bundled via npm)
@@ -100,8 +108,8 @@ export default defineConfig({
 
 Currently, the project does not have an automated test suite. However, manual testing should cover:
 
-1. **Editor modes:** Switch between “Reveal Codes” and “Visual” modes and verify content synchronization.
-2. **Web Speech TTS:** Select text and click the play button; ensure word‑level highlighting works in both modes.
+1. **Editor modes:** Switch between "Reveal Codes" and "Visual" modes and verify content synchronization (`src/editor-manager.js`).
+2. **Web Speech TTS:** Select text and click the play button; ensure word‑level highlighting works in both modes (`src/tts-controller.js`, `src/highlighting-utils.js`).
 3. **Kokoro TTS:** Switch the engine selector to "Kokoro TTS", select text, and play. Verify:
    - Audio chunks appear as cards and play sequentially without cutting each other short
    - The active chunk is highlighted with a blue border and blue background
@@ -109,17 +117,17 @@ Currently, the project does not have an automated test suite. However, manual te
    - The "Download Audio" button appears after generation completes
    - No AbortErrors appear in the browser console
    - Kokoro is disabled on mobile with an info indicator shown next to the engine selector
-5. **Mobile autoplay handling:** Test on iOS Safari and Android Chrome:
+4. **Mobile autoplay handling:** Test on iOS Safari and Android Chrome:
    - Audio starts muted, "▶ Tap to play" indicator shows on chunk cards
    - Tapping the indicator or play button unmutes and starts playback
    - Auto-advance between chunks shows "▶ Tap to play" indicator on mobile
    - Desktop browsers still auto-play without requiring user interaction
 5. **Engine switching:** Toggle between Web Speech and Kokoro, verify each plays correctly.
-6. **Theme toggling:** Click the theme icon and verify that light/dark modes are applied and persisted.
+6. **Theme toggling:** Click the theme icon and verify that light/dark modes are applied and persisted (`src/ui-manager.js`).
 7. **Export features:** Test the "Copy" and "Download .md" buttons.
 8. **Responsive layout:** Resize the browser and confirm the UI adapts correctly.
-10. **Pitch slider:** Test pitch control (range: -2 to +2, step: 0.5) in both Web Speech and Kokoro TTS modes — it should work on all platforms and engines. Note: Safari Web Speech omits pitch (`if (!isSafari)`).
-10. **Settings persistence:** Verify engine, voice, speed, pitch are saved to localStorage under key `freetts-settings` and restored on reload.
+9. **Pitch slider:** Test pitch control (range: -2 to +2, step: 0.5) in both Web Speech and Kokoro TTS modes — it should work on all platforms and engines. Note: Safari Web Speech omits pitch (`if (!isSafari)`).
+10. **Settings persistence:** Verify engine, voice, speed, pitch are saved to localStorage under key `freetts-settings` and restored on reload (`src/settings-persistence.js`).
 11. **Keyboard shortcut:** Verify `Ctrl+Enter` (or `Cmd+Enter`) toggles playback.
 12. **Reset Settings button:** Verify it resets all TTS controls to defaults while keeping user preferences.
 **Future improvements:** Adding unit tests and integration tests with a headless browser (e.g., Playwright) is recommended.
