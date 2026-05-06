@@ -105,11 +105,12 @@ export class TTSController {
     speakWithWebSpeech(textToSpeak, startOffset, stopWebSpeech) {
         const cleanText = cleanMarkdown(textToSpeak);
         const utter = new SpeechSynthesisUtterance(cleanText);
-        const selectedVoice = this.voices[this.elements.voiceSelect.value];
+        // Look up voice by name from the voices array
+        const selectedVoice = this.voices.find(v => v.name === this.elements.voiceSelect.value);
         if (selectedVoice) utter.voice = selectedVoice;
         utter.rate = parseFloat(this.elements.speedSlider.value);
         if (!this.isSafari) utter.pitch = 1 + parseInt(this.elements.pitchSlider.value) / 12;
-
+        
         utter.onboundary = (e) => {
             if (e.name !== 'word') return;
             const wordMatch = e.utterance.text.substring(e.charIndex).match(/\w+/);

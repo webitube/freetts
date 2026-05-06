@@ -10,41 +10,77 @@ const STORAGE_KEY = 'freetts-settings';
  */
 const DEFAULT_SETTINGS = {
     engine: 'webspeech',
-    voice: '',
+    voices: {
+        webspeech: '',
+        kokoro: ''
+    },
     speed: 1,
     pitch: 0
 };
+
+
+function getSettings()
+{
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+}
+
+export function getSavedVoice()
+{
+    const settings = getSettings();
+    if (settings) {
+        const currentEngine = settings.engine || DEFAULT_SETTINGS.engine;
+        return settings.voices[currentEngine];
+    }
+    return DEFAULT_SETTINGS.voices[currentEngine];
+}
 
 /**
  * Save TTS settings to localStorage
  * @param {Object} elements - DOM elements object
  */
-export function saveTTSSettings(elements) {
+export function saveTTSSettings(elements, saveEngineOnly = false) {
+    const currentEngine = elements.engineSelect.value;
+    const savedSettings = getSettings();
+    //console.log(`saveTTSSettings():BEGIN: saveEngineOnly=${saveEngineOnly}: settings=${JSON.stringify(savedSettings)}`)
+    
+    // Load current voices
+    const voices = savedSettings.voices || { webspeech: '', kokoro: '' };
+        
+    if (!saveEngineOnly)
+    {
+        // Save only the voice for the currently selected engine
+        voices[currentEngine] = elements.voiceSelect.value;
+    }
+    
     const settings = {
-        engine: elements.engineSelect.value,
-        voice: elements.voiceSelect.value,
+        engine: currentEngine,
+        voices: voices,
         speed: elements.speedSlider.value,
         pitch: elements.pitchSlider.value,
     };
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    //console.log(`saveTTSSettings():END: saveEngineOnly=${saveEngineOnly}: settings=${JSON.stringify(settings)}`)
 }
 
 /**
  * Load TTS settings from localStorage
  * @param {Object} elements - DOM elements object
- * @returns {boolean} Whether settings were loaded successfully
+ * @returns {Object} Loaded settings object with engine and current voice
  */
 export function loadTTSSettings(elements) {
     try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
             const settings = JSON.parse(saved);
+            //console.log(`loadTTSSettings(): settings=${saved}`);
+
+            const currentEngine = settings.engine || DEFAULT_SETTINGS.engine;
             // Restore engine
-            elements.engineSelect.value = settings.engine || DEFAULT_SETTINGS.engine;
-            // Restore voice (only if Web Speech is selected)
-            if (settings.engine === 'webspeech' && settings.voice) {
-                elements.voiceSelect.value = settings.voice;
-            }
+            elements.engineSelect.value = currentEngine;
+            // Restore voice for the current engine
+            const savedVoice = settings.voices?.[currentEngine] || DEFAULT_SETTINGS.voices[currentEngine] || '';
+            elements.voiceSelect.value = savedVoice;
             // Restore speed
             elements.speedSlider.value = settings.speed || DEFAULT_SETTINGS.speed;
             elements.speedVal.textContent = `${parseFloat(elements.speedSlider.value).toFixed(1)}×`;
@@ -52,12 +88,12 @@ export function loadTTSSettings(elements) {
             elements.pitchSlider.value = settings.pitch || DEFAULT_SETTINGS.pitch;
             const pitchVal = parseInt(elements.pitchSlider.value);
             elements.pitchVal.textContent = pitchVal > 0 ? `+${pitchVal}` : `${pitchVal}`;
-            return true;
+            return { engine: currentEngine, voice: savedVoice };
         }
     } catch (e) {
         console.error('Failed to load TTS settings:', e);
     }
-    return false;
+    return { engine: DEFAULT_SETTINGS.engine, voice: '' };
 }
 
 /**
@@ -68,7 +104,7 @@ export function loadTTSSettings(elements) {
 export function resetTTSSettings(elements, statusCallback) {
     // Reset all controls to defaults
     elements.engineSelect.value = DEFAULT_SETTINGS.engine;
-    elements.voiceSelect.value = DEFAULT_SETTINGS.voice;
+    elements.voiceSelect.value = DEFAULT_SETTINGS.voices[DEFAULT_SETTINGS.engine] || '';
     elements.speedSlider.value = DEFAULT_SETTINGS.speed;
     elements.speedVal.textContent = `${DEFAULT_SETTINGS.speed}×`;
     elements.pitchSlider.value = DEFAULT_SETTINGS.pitch;

@@ -5,7 +5,8 @@ import { highlightVisualWord, getVisualCursorInfo } from './highlighting-utils.j
 import { 
     saveTTSSettings, 
     loadTTSSettings, 
-    resetTTSSettings 
+    resetTTSSettings,
+    getSavedVoice
 } from './settings-persistence.js';
 import { 
     initThemeToggle, 
@@ -106,6 +107,11 @@ elements.pitchSlider.oninput = () => {
     saveTTSSettings(elements);
 };
 
+// --- VOICE SELECTION ---
+elements.voiceSelect.onchange = () => {
+    saveTTSSettings(elements);
+};
+
 // --- RESET BUTTON ---
 if (elements.resetSettings) {
     elements.resetSettings.onclick = () => {
@@ -116,27 +122,28 @@ if (elements.resetSettings) {
 }
 
 // --- INITIALIZATION ---
-// Load persisted settings
-loadTTSSettings(elements);
+// Load persisted settings and capture saved voice
+const savedSettings = loadTTSSettings(elements);
 
 // Load voices for the restored engine
 let voices = [];
 const savedEngine = elements.engineSelect.value;
+const savedVoice = getSavedVoice();
 if (savedEngine === 'kokoro') {
     // Initialize Kokoro worker and load Kokoro voices
     kokoroPlayer.workerComm.initializeWorker().then(() => {
         if (kokoroPlayer.voices) {
-            loadKokoroVoices(elements, kokoroPlayer.voices);
+            loadKokoroVoices(elements, kokoroPlayer.voices, savedVoice);
         } else {
             elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro TTS (loading...)</option>';
         }
     });
 } else {
     // Load Web Speech voices
-    voices = loadWebSpeechVoices(elements, window.speechSynthesis);
+    voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedVoice);
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
         window.speechSynthesis.onvoiceschanged = () => {
-            voices = loadWebSpeechVoices(elements, window.speechSynthesis);
+            voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedSettings.voice);
             ttsController.voices = voices;
         };
     }
@@ -150,7 +157,9 @@ updatePitchWarning(elements.pitchSlider);
 elements.engineSelect.onchange = () => {
     const engine = elements.engineSelect.value;
     ttsController.setActiveEngine(engine);
-    saveTTSSettings(elements);
+    saveTTSSettings(elements, true);
+    const savedVoice = getSavedVoice();
+    //console.log(`engineSelect.onchange(): savedVoice=${savedVoice}`);
     
     if (engine === 'kokoro') {
         // Mobile Kokoro UX: Show info message and disable Kokoro on mobile
@@ -176,11 +185,10 @@ elements.engineSelect.onchange = () => {
             return;
         }
 
-        console.log(`webgpu=${navigator.gpu}`);
-        console.assert(navigator.gpu != null);
+        //console.log(`webgpu=${navigator.gpu}`);
         kokoroPlayer.workerComm.initializeWorker().then(() => {
             if (kokoroPlayer.voices) {
-                loadKokoroVoices(elements, kokoroPlayer.voices);
+                loadKokoroVoices(elements, kokoroPlayer.voices, savedVoice);
             } else {
                 // Fallback: show placeholder
                 elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro TTS (loading...)</option>';
@@ -190,7 +198,7 @@ elements.engineSelect.onchange = () => {
         // Remove info indicator when switching away from Kokoro
         const kokoroInfo = document.getElementById('kokoro-mobile-info');
         if (kokoroInfo) kokoroInfo.remove();
-        voices = loadWebSpeechVoices(elements, window.speechSynthesis);
+        voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedVoice);
         ttsController.voices = voices;
     }
     updatePitchWarning(elements.pitchSlider);
