@@ -101,7 +101,9 @@ export function loadTTSSettings(elements) {
  * @param {Object} elements - DOM elements object
  * @param {Function} statusCallback - Callback to update status message
  */
-export function resetTTSSettings(elements, statusCallback) {
+export function resetTTSSettings(elements, statusCallback, editorManager = null) {
+    // Clear all saved settings from localStorage
+    localStorage.removeItem(STORAGE_KEY);
     // Reset all controls to defaults
     elements.engineSelect.value = DEFAULT_SETTINGS.engine;
     elements.voiceSelect.value = DEFAULT_SETTINGS.voices[DEFAULT_SETTINGS.engine] || '';
@@ -109,8 +111,12 @@ export function resetTTSSettings(elements, statusCallback) {
     elements.speedVal.textContent = `${DEFAULT_SETTINGS.speed}×`;
     elements.pitchSlider.value = DEFAULT_SETTINGS.pitch;
     elements.pitchVal.textContent = `${DEFAULT_SETTINGS.pitch}`;
-    // Reload saved settings (keeps user preferences)
-    loadTTSSettings(elements);
+    // Switch back to Reveal Codes (Source) mode
+    if (editorManager && typeof editorManager.switchToSource === 'function') {
+        editorManager.switchToSource();
+    }
+    // Save the defaults back to localStorage so they persist
+    saveTTSSettings(elements);
     statusCallback('Settings reset.');
     setTimeout(() => statusCallback('Ready.'), 2000);
 }

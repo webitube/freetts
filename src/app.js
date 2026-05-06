@@ -117,7 +117,7 @@ if (elements.resetSettings) {
     elements.resetSettings.onclick = () => {
         resetTTSSettings(elements, (msg) => {
             if (elements.status) elements.status.textContent = msg;
-        });
+        }, editorManager);
     };
 }
 
