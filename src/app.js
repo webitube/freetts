@@ -102,8 +102,8 @@ elements.speedSlider.oninput = () => {
     saveTTSSettings(elements);
 };
 elements.pitchSlider.oninput = () => {
-    const v = parseInt(elements.pitchSlider.value);
-    elements.pitchVal.textContent = v > 0 ? `+${v}` : `${v}`;
+    const v = parseFloat(elements.pitchSlider.value);
+    elements.pitchVal.textContent = v > 0 ? `+${v.toFixed(1)}` : `${v.toFixed(1)}`;
     saveTTSSettings(elements);
 };
 

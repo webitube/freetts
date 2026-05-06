@@ -86,8 +86,8 @@ export function loadTTSSettings(elements) {
             elements.speedVal.textContent = `${parseFloat(elements.speedSlider.value).toFixed(1)}×`;
             // Restore pitch
             elements.pitchSlider.value = settings.pitch || DEFAULT_SETTINGS.pitch;
-            const pitchVal = parseInt(elements.pitchSlider.value);
-            elements.pitchVal.textContent = pitchVal > 0 ? `+${pitchVal}` : `${pitchVal}`;
+            const pitchVal = parseFloat(elements.pitchSlider.value);
+            elements.pitchVal.textContent = pitchVal > 0 ? `+${pitchVal.toFixed(1)}` : `${pitchVal.toFixed(1)}`;
             return { engine: currentEngine, voice: savedVoice };
         }
     } catch (e) {
