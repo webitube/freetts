@@ -1,5 +1,8 @@
 {
     "chat.agentFilesLocations": {
         "~/.copilotagents": true
+    },
+    "chat.tools.terminal.autoApprove": {
+        "npx vitest": true
     }
 }

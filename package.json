@@ -19,6 +19,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "deploy": "echo \"Deploy via GitHub Actions: push to master and visit Actions tab\""
   },
   "repository": {
@@ -34,6 +37,9 @@
   },
   "homepage": "https://github.com/webitube/freetts#readme",
   "devDependencies": {
-    "vite": "^8.0.9"
+    "@vitest/browser": "^4.1.5",
+    "happy-dom": "^20.9.0",
+    "vite": "^8.0.9",
+    "vitest": "^4.1.5"
   }
 }
