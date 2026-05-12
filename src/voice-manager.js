@@ -27,21 +27,19 @@ import {
 
 
 /**
- * Load Web Speech voices and populate voice selector
+ * Populate voice selector UI with the given voices array.
  * @param {Object} elements - DOM elements object
- * @param {SpeechSynthesis} synth - SpeechSynthesis instance
+ * @param {Array} voices - Array of voice objects
  * @param {string} [savedVoice] - Previously saved voice name to restore
- * @returns {Array} Loaded voices array
  */
-export function loadWebSpeechVoices(elements, synth, savedVoice) {
-    const voices = synth.getVoices();
-    //debugLogArray(`loadWebSpeechVoices(): Web Speech Voices: ${voices.length} voices`, voices)
+function populateVoiceSelect(elements, voices, savedVoice) {
+    //debugLogArray(`populateVoiceSelect(): Web Speech Voices: ${voices.length} voices`, voices)
     elements.voiceSelect.innerHTML = voices
         .map((v) => `<option value="${v.name}">${v.name} (${v.lang})</option>`)
         .join('');
 
     // Restore saved voice selection after populating options
-    debugLog(`loadWebSpeechVoices(): voices.length=${voices.length}; savedVoice="${savedVoice}"`);
+    debugLog(`populateVoiceSelect(): voices.length=${voices.length}; savedVoice="${savedVoice}"`);
     if (savedVoice !== undefined && savedVoice !== '') {
         // Backward compatibility: if savedVoice looks like an old index, convert it
         let resolvedVoice = savedVoice;
@@ -67,7 +65,47 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
             setSavedVoice(currentEngine, elements.voiceSelect.value);
         }
     }
-    return voices;
+}
+
+/**
+ * Load Web Speech voices and populate voice selector.
+ * Waits for voiceschanged event if voices are not yet available.
+ * @param {Object} elements - DOM elements object
+ * @param {SpeechSynthesis} synth - SpeechSynthesis instance
+ * @param {string} [savedVoice] - Previously saved voice name to restore
+ * @returns {Promise<Array>} Promise resolving to the loaded voices array
+ */
+export function loadWebSpeechVoices(elements, synth, savedVoice) {
+    return new Promise((resolve) => {
+        const voices = synth.getVoices();
+        if (voices.length > 0) {
+            // Voices already loaded — populate immediately
+            populateVoiceSelect(elements, voices, savedVoice);
+            resolve(voices);
+        } else {
+            // Voices not yet loaded — wait for the voiceschanged event
+            debugLog(`loadWebSpeechVoices(): voices not yet loaded, waiting for voiceschanged event`);
+            
+            const onVoicesChanged = () => {
+                synth.removeEventListener('voiceschanged', onVoicesChanged);
+                const loadedVoices = synth.getVoices();
+                debugLog(`loadWebSpeechVoices(): voiceschanged fired, loaded ${loadedVoices.length} voices`);
+                populateVoiceSelect(elements, loadedVoices, savedVoice);
+                resolve(loadedVoices);
+            };
+            
+            synth.addEventListener('voiceschanged', onVoicesChanged);
+            
+            // Safety timeout: if voices don't arrive within 5 seconds, populate with whatever is available
+            setTimeout(() => {
+                synth.removeEventListener('voiceschanged', onVoicesChanged);
+                const timeoutVoices = synth.getVoices();
+                debugLog(`loadWebSpeechVoices(): voiceschanged timeout after 5s, loaded ${timeoutVoices.length} voices`);
+                populateVoiceSelect(elements, timeoutVoices, savedVoice);
+                resolve(timeoutVoices);
+            }, 5000);
+        }
+    });
 }
 
 /**
@@ -77,35 +115,32 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
  * @param {string} [savedVoice] - Previously saved voice to restore
  */
 export function loadKokoroVoices(elements, kokoroVoices, savedVoice) {
-    //debugLog(`loadKokoroVoices():1: savedVoice=${savedVoice}`);
+    const currentEngine = elements.engineSelect.value;
+    debugLog(`loadKokoroVoices():1: savedVoice=${savedVoice}, currentEngine=${currentEngine}`);
     elements.voiceSelect.innerHTML = Object.entries(kokoroVoices)
         .map(([key, v]) => {
             const locale = v.language === 'en-us' ? 'American' : 'British';
             return `<option value="${key}">${v.name} (${locale} ${v.gender})</option>`;
         })
         .join('');
+
     // Restore saved voice selection after populating options
     if (savedVoice !== undefined && savedVoice !== '') {
-        //debugLog(`loadKokoroVoices():2: savedVoice=${savedVoice}`);
+        debugLog(`loadKokoroVoices():2: savedVoice=${savedVoice}`);
         elements.voiceSelect.value = savedVoice;
-        saveTTSSettings(elements);
-        setSavedVoice(currentEngine, elements.voiceSelect.value);    }
+    }
     else
     {
         // No saved voice — default to the first available voice
         const firstKey = Object.keys(kokoroVoices)[0];
-        //debugLog(`loadKokoroVoices():3: savedVoice=${savedVoice}`);
+        debugLog(`loadKokoroVoices():3: savedVoice=${savedVoice}`);
         if (firstKey) {
             elements.voiceSelect.value = firstKey;
-            const currentEngine = elements.engineSelect.value;
-            //debugLog(`loadKokoroVoices():4: savedVoice=${savedVoice}, currentEngine=${currentEngine}, elements.voiceSelect.value=${elements.voiceSelect.value}`);
-            saveTTSSettings(elements);
-            setSavedVoice(currentEngine, elements.voiceSelect.value);
+            debugLog(`loadKokoroVoices():4: savedVoice=${savedVoice}, currentEngine=${currentEngine}, elements.voiceSelect.value=${elements.voiceSelect.value}`);
         }
     }
-    saveTTSSettings(elements);
-    setSavedVoice(currentEngine, elements.voiceSelect.value);
-    //debugLog(`loadKokoroVoices():5: savedVoice=${savedVoice}, currentEngine=${currentEngine}, elements.voiceSelect.value=${elements.voiceSelect.value}`);
+
+    debugLog(`loadKokoroVoices():5: savedVoice=${savedVoice}, currentEngine=${currentEngine}, elements.voiceSelect.value=${elements.voiceSelect.value}`);
 }
 
 /**

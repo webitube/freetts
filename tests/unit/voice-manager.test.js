@@ -53,60 +53,104 @@ describe('voice-manager.js', () => {
     });
 
     describe('loadWebSpeechVoices', () => {
-        it('should populate voice select options', () => {
-            const voices = loadWebSpeechVoices(mockElements, mockSynth);
+        it('should populate voice select options', async () => {
+            const voices = await loadWebSpeechVoices(mockElements, mockSynth);
             
             expect(mockElements.voiceSelect.innerHTML).toContain('Voice 1');
             expect(mockElements.voiceSelect.innerHTML).toContain('Voice 2');
             expect(mockElements.voiceSelect.innerHTML).toContain('en-US');
             expect(mockElements.voiceSelect.innerHTML).toContain('en-GB');
+            expect(Array.isArray(voices)).toBe(true);
+            expect(voices.length).toBe(2);
         });
 
-        it('should return voices array', () => {
-            const voices = loadWebSpeechVoices(mockElements, mockSynth);
+        it('should return voices array', async () => {
+            const voices = await loadWebSpeechVoices(mockElements, mockSynth);
             
             expect(Array.isArray(voices)).toBe(true);
             expect(voices.length).toBe(2);
         });
 
-        it('should restore saved voice by name', () => {
-            loadWebSpeechVoices(mockElements, mockSynth, 'Voice 1');
+        it('should restore saved voice by name', async () => {
+            await loadWebSpeechVoices(mockElements, mockSynth, 'Voice 1');
             
             expect(mockElements.voiceSelect.value).toBe('Voice 1');
         });
 
-        it('should handle saved voice as old index', () => {
+        it('should handle saved voice as old index', async () => {
             // If saved voice looks like a number, convert to actual voice name
-            loadWebSpeechVoices(mockElements, mockSynth, '1');
+            await loadWebSpeechVoices(mockElements, mockSynth, '1');
             
             expect(mockElements.voiceSelect.value).toBe('Voice 2');
         });
 
-        it('should default to first voice if saved voice not found', () => {
-            loadWebSpeechVoices(mockElements, mockSynth, 'Nonexistent Voice');
+        it('should default to first voice if saved voice not found', async () => {
+            await loadWebSpeechVoices(mockElements, mockSynth, 'Nonexistent Voice');
             
             expect(mockElements.voiceSelect.value).toBe('Voice 1');
         });
 
-        it('should set first voice when no saved voice', () => {
-            loadWebSpeechVoices(mockElements, mockSynth, '');
+        it('should set first voice when no saved voice', async () => {
+            await loadWebSpeechVoices(mockElements, mockSynth, '');
             
             expect(mockElements.voiceSelect.value).toBe('Voice 1');
         });
 
-        it('should call setSavedVoice when setting default', () => {
-            loadWebSpeechVoices(mockElements, mockSynth, '');
+        it('should call setSavedVoice when setting default', async () => {
+            await loadWebSpeechVoices(mockElements, mockSynth, '');
             
             expect(setSavedVoice).toHaveBeenCalledWith('webspeech', 'Voice 1');
         });
 
-        it('should handle empty voices array', () => {
+        it('should handle empty voices array with voiceschanged event', async () => {
+            let voicesLoaded = false;
+            mockSynth.getVoices = () => {
+                if (voicesLoaded) {
+                    return [
+                        { name: 'Voice 1', lang: 'en-US' },
+                        { name: 'Voice 2', lang: 'en-GB' },
+                    ];
+                }
+                return [];
+            };
+            
+            // Simulate voices becoming available via voiceschanged event
+            const voiceschangedCallbacks = [];
+            mockSynth.addEventListener = (event, callback) => {
+                if (event === 'voiceschanged') voiceschangedCallbacks.push(callback);
+            };
+            mockSynth.removeEventListener = (event, callback) => {
+                const idx = voiceschangedCallbacks.indexOf(callback);
+                if (idx >= 0) voiceschangedCallbacks.splice(idx, 1);
+            };
+            
+            const loadPromise = loadWebSpeechVoices(mockElements, mockSynth, '');
+            
+            // Trigger voiceschanged event — voices are now available
+            voicesLoaded = true;
+            voiceschangedCallbacks.forEach(cb => cb());
+            
+            // Wait for promise to resolve
+            await loadPromise;
+            
+            expect(mockElements.voiceSelect.value).toBe('Voice 1');
+        });
+
+        it('should use timeout when voiceschanged does not fire', async () => {
             mockSynth.getVoices = () => [];
             
-            loadWebSpeechVoices(mockElements, mockSynth, '');
+            // Do NOT trigger voiceschanged — let timeout fire instead
+            mockSynth.addEventListener = () => {};
+            mockSynth.removeEventListener = () => {};
             
-            expect(mockElements.voiceSelect.value).toBe('');
-        });
+            const loadPromise = loadWebSpeechVoices(mockElements, mockSynth, '');
+            
+            // Wait for timeout (5 seconds) — increase test timeout
+            await new Promise(resolve => setTimeout(resolve, 5100));
+            
+            // Should still populate with whatever voices are available (empty)
+            expect(mockElements.voiceSelect.innerHTML).toBe('');
+        }, 8000); // Increase test timeout to 8s
     });
 
     describe('loadKokoroVoices', () => {

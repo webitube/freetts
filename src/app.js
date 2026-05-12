@@ -23,7 +23,8 @@ import {
     loadTTSSettings, 
     resetTTSSettings,
     getSavedVoice,
-    saveIfNoSettings
+    saveIfNoSettings,
+    hasSettings
 } from './settings-persistence.js';
 import { 
     initThemeToggle, 
@@ -42,7 +43,7 @@ setDebugMode(true);
 debugLog(`app.js: BEGIN...`);
 
 // Wait for DOM to be fully loaded before accessing elements
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
     // --- INITIAL DATA ---
 const initialValue = `# Welcome to FreeTTS\nA tramping of sea boots was heard in the entry. \nThe door was flung open, and in rolled a wild set of mariners enough.\nEnveloped in their shaggy watch coats, and with their heads muffled in woollen comforters. \nAll bedarned and ragged, and their beards stiff with icicles.\nThey seemed an eruption of bears from Labrador.\nThey had just landed from their boat, and this was the first house they entered.`;
@@ -81,6 +82,10 @@ const elements = {
 // --- INITIALIZE MODULES ---
 const editorManager = new EditorManager(elements, initialValue);
 elements.source.value = initialValue;
+
+
+// If there are no local storage settings, then create one.
+saveIfNoSettings(elements);
 
 // Initialize KokoroPlayer
 const kokoroPlayer = new KokoroPlayer('kokoro-chunk-list', (msg) => {
@@ -150,42 +155,32 @@ const savedSettings = loadTTSSettings(elements);
 let voices = [];
 const savedEngine = elements.engineSelect.value;
 const savedVoice = getSavedVoice(savedEngine);
+elements.voiceSelect.innerHTML = '<option value="">LOADING...</option>';
 if (savedEngine === 'kokoro') {
     // Initialize Kokoro worker and load Kokoro voices
     kokoroPlayer.workerComm.initializeWorker().then(() => {
-        elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro TTS (loading...)</option>';
         if (kokoroPlayer.voices) {
             //debugLogArray(`kokoroPlayer.voices`, Object.keys(kokoroPlayer.voices));
             loadKokoroVoices(elements, kokoroPlayer.voices, savedVoice);
-        } else {
-            elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro TTS (loading...)</option>';
+            saveTTSSettings(elements);
         }
     });
 } else {
-    // Load Web Speech voices
-    voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedVoice);
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        debugLog(`app.js: WEBSPEECH VOICES LOADING...`, 'Load Web Speech voices')
-        window.speechSynthesis.onvoiceschanged = () => {
-            debugLogEnd(`app.js: WEBSPEECH VOICES LOADED.`, 'Load Web Speech voices')
-            voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedSettings.voice);
-            ttsController.voices = voices;
-            saveIfNoSettings(elements);
-        };
-    }
+    // Load Web Speech voices (async — waits for voiceschanged if needed)
+    voices = await loadWebSpeechVoices(elements, window.speechSynthesis, savedVoice);
     ttsController.voices = voices;
+    saveIfNoSettings(elements);
 }
 
 // Update pitch warning
 updatePitchWarning(elements.pitchSlider);
 
 // --- ENGINE SWITCH ---
-elements.engineSelect.onchange = () => {
-    const engine = elements.engineSelect.value;
-    ttsController.setActiveEngine(engine);
-    saveTTSSettings(elements, true);
-    const savedVoice = getSavedVoice(engine);
-    debugLog(`engineSelect.onchange(): savedVoice=${savedVoice}`);
+    elements.engineSelect.onchange = async () => {
+        const engine = elements.engineSelect.value;
+        const savedVoice = getSavedVoice(engine);
+        debugLog(`engineSelect.onchange(): savedVoice=${savedVoice}`);
+        elements.voiceSelect.innerHTML = '<option value="">LOADING...</option>';
     
     if (engine === 'kokoro') {
         // Mobile Kokoro UX: Show info message and disable Kokoro on mobile
@@ -214,18 +209,15 @@ elements.engineSelect.onchange = () => {
         debugLog(`webgpu=${navigator.gpu}`);
         debugLog(`KOKORO VOICES: LOADING...`, 'kokoroPlayer.workerComm.initializeWorker()');
 
-        if (savedVoice == undefined || savedVoice == "")
-        {
-            elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro: LOADING</option>';
-        }
         kokoroPlayer.workerComm.initializeWorker().then(() => {
             debugLogEnd(`KOKORO VOICES: LOADED`, 'kokoroPlayer.workerComm.initializeWorker()');
             if (kokoroPlayer.voices) {
                 //debugLogArray(`kokoroPlayer.voices`, Object.keys(kokoroPlayer.voices));
                 loadKokoroVoices(elements, kokoroPlayer.voices, savedVoice);
+                saveTTSSettings(elements);
             } else {
                 // Fallback: show placeholder
-                elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro: INIT ERROR</option>';
+                elements.voiceSelect.innerHTML = '<option value="">Kokoro: INIT ERROR</option>';
                 console.error(`elements.engineSelect.onchange(): Can't load Kokoro TTS voices. Voice array is empty.`);
             }
         });
@@ -234,7 +226,7 @@ elements.engineSelect.onchange = () => {
         const kokoroInfo = document.getElementById('kokoro-mobile-info');
         if (kokoroInfo) kokoroInfo.remove();
         debugLog(`Web Speech Voices: LOADING... -> savedVoice=${savedVoice}`);
-        voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedVoice);
+        voices = await loadWebSpeechVoices(elements, window.speechSynthesis, savedVoice);
         debugLog(`Web Speech Voices: LOADED -> savedVoice=${savedVoice}`);
         ttsController.voices = voices;
     }
