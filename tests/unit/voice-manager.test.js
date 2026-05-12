@@ -4,6 +4,7 @@ import { loadWebSpeechVoices, loadKokoroVoices } from '../../src/voice-manager.j
 // Mock settings-persistence
 vi.mock('../../src/settings-persistence.js', () => ({
     saveIfNoSettings: vi.fn(),
+    saveTTSSettings: vi.fn(),
     setSavedVoice: vi.fn(),
 }));
 
@@ -23,7 +24,7 @@ vi.mock('../../src/debug-log.js', () => ({
     debugErrorEnd: vi.fn(),
 }));
 
-import { saveIfNoSettings, setSavedVoice } from '../../src/settings-persistence.js';
+import { saveIfNoSettings, saveTTSSettings, setSavedVoice } from '../../src/settings-persistence.js';
 
 describe('voice-manager.js', () => {
     let mockElements;
@@ -96,10 +97,10 @@ describe('voice-manager.js', () => {
             expect(mockElements.voiceSelect.value).toBe('Voice 1');
         });
 
-        it('should call setSavedVoice when setting default', async () => {
+        it('should call saveTTSSettings when setting default', async () => {
             await loadWebSpeechVoices(mockElements, mockSynth, '');
             
-            expect(setSavedVoice).toHaveBeenCalledWith('webspeech', 'Voice 1');
+            expect(saveTTSSettings).toHaveBeenCalledWith(mockElements);
         });
 
         it('should handle empty voices array with voiceschanged event', async () => {
