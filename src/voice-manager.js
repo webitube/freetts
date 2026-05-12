@@ -39,8 +39,9 @@ function populateVoiceSelect(elements, voices, savedVoice) {
         .join('');
 
     // Restore saved voice selection after populating options
-    debugLog(`populateVoiceSelect(): voices.length=${voices.length}; savedVoice="${savedVoice}"`);
+    debugLog(`populateVoiceSelect(): 1: voices.length=${voices.length}; savedVoice="${savedVoice}"`);
     if (savedVoice !== undefined && savedVoice !== '') {
+        debugLog(`populateVoiceSelect(): 2: voices.length=${voices.length}; savedVoice="${savedVoice}"`);
         // Backward compatibility: if savedVoice looks like an old index, convert it
         let resolvedVoice = savedVoice;
         const indexMatch = savedVoice.match(/^\d+$/);
@@ -53,16 +54,17 @@ function populateVoiceSelect(elements, voices, savedVoice) {
             resolvedVoice = exists ? savedVoice : (voices.length > 0 ? voices[0].name : '');
         }
         elements.voiceSelect.value = resolvedVoice;
+        saveTTSSettings(elements);
     }
     else
     {
         // No saved voice — default to the first available voice.
         // Then, update the local storage for the currently selected engine.
+        debugLog(`populateVoiceSelect(): 3: voices.length=${voices.length}; savedVoice="${savedVoice}"`);
         if (voices.length > 0) {
             elements.voiceSelect.value = voices[0].name;
             const currentEngine = elements.engineSelect.value;
-            saveIfNoSettings(elements);
-            setSavedVoice(currentEngine, elements.voiceSelect.value);
+            saveTTSSettings(elements);
         }
     }
 }
