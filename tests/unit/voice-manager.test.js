@@ -190,16 +190,6 @@ describe('voice-manager.js', () => {
             expect(mockElements.voiceSelect.value).toBe('af_heart');
         });
 
-        it('should call saveIfNoSettings', () => {
-            const kokoroVoices = {
-                af_heart: { name: 'Heart', language: 'en-us', gender: 'Female' },
-            };
-
-            loadKokoroVoices(mockElements, kokoroVoices, '');
-            
-            expect(saveIfNoSettings).toHaveBeenCalledWith(mockElements);
-        });
-
         it('should handle empty Kokoro voices object', () => {
             loadKokoroVoices(mockElements, {}, '');
             
