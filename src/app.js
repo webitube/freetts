@@ -178,7 +178,7 @@ if (savedEngine === 'kokoro') {
 updatePitchWarning(elements.pitchSlider);
 
 // --- ENGINE SWITCH ---
-    elements.engineSelect.onchange = async () => {
+elements.engineSelect.onchange = async () => {
         const engine = elements.engineSelect.value;
         const savedVoice = getSavedVoice(engine);
         debugLog(`engineSelect.onchange(): savedVoice=${savedVoice}`);
@@ -233,6 +233,7 @@ updatePitchWarning(elements.pitchSlider);
         ttsController.voices = voices;
     }
     updatePitchWarning(elements.pitchSlider);
+    ttsController.setActiveEngine(engine);
 };
 
 // --- MODE SWITCHING ---
