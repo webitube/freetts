@@ -46,7 +46,9 @@ debugLog(`app.js: BEGIN...`);
 document.addEventListener('DOMContentLoaded', async () => {
 
     // --- INITIAL DATA ---
-const initialValue = `# Welcome to FreeTTS\nA tramping of sea boots was heard in the entry. \nThe door was flung open, and in rolled a wild set of mariners enough.\nEnveloped in their shaggy watch coats, and with their heads muffled in woollen comforters. \nAll bedarned and ragged, and their beards stiff with icicles.\nThey seemed an eruption of bears from Labrador.\nThey had just landed from their boat, and this was the first house they entered.`;
+// Load default text from public/DefaultText.md
+const defaultTextResponse = await fetch('DefaultText.md');
+const initialValue = await defaultTextResponse.text();
 
 // --- BROWSER DETECTION ---
 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
