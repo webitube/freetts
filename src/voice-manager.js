@@ -4,7 +4,9 @@
  */
 
 import {
+    hasSettings,
     saveIfNoSettings, 
+    saveTTSSettings, 
     setSavedVoice
 } from "./settings-persistence";
 
@@ -20,6 +22,7 @@ import {
     debugWarnEnd,
     debugError,
     debugErrorEnd,
+    debugLogArray,
 } from './debug-log.js'
 
 
@@ -32,10 +35,13 @@ import {
  */
 export function loadWebSpeechVoices(elements, synth, savedVoice) {
     const voices = synth.getVoices();
+    //debugLogArray(`loadWebSpeechVoices(): Web Speech Voices: ${voices.length} voices`, voices)
     elements.voiceSelect.innerHTML = voices
         .map((v) => `<option value="${v.name}">${v.name} (${v.lang})</option>`)
         .join('');
+
     // Restore saved voice selection after populating options
+    debugLog(`loadWebSpeechVoices(): voices.length=${voices.length}; savedVoice="${savedVoice}"`);
     if (savedVoice !== undefined && savedVoice !== '') {
         // Backward compatibility: if savedVoice looks like an old index, convert it
         let resolvedVoice = savedVoice;
@@ -57,6 +63,7 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
         if (voices.length > 0) {
             elements.voiceSelect.value = voices[0].name;
             const currentEngine = elements.engineSelect.value;
+            saveIfNoSettings(elements);
             setSavedVoice(currentEngine, elements.voiceSelect.value);
         }
     }
@@ -70,7 +77,7 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
  * @param {string} [savedVoice] - Previously saved voice to restore
  */
 export function loadKokoroVoices(elements, kokoroVoices, savedVoice) {
-    debugLog(`loadKokoroVoices():1: savedVoice=${savedVoice}`);
+    //debugLog(`loadKokoroVoices():1: savedVoice=${savedVoice}`);
     elements.voiceSelect.innerHTML = Object.entries(kokoroVoices)
         .map(([key, v]) => {
             const locale = v.language === 'en-us' ? 'American' : 'British';
@@ -79,21 +86,26 @@ export function loadKokoroVoices(elements, kokoroVoices, savedVoice) {
         .join('');
     // Restore saved voice selection after populating options
     if (savedVoice !== undefined && savedVoice !== '') {
-        debugLog(`loadKokoroVoices():2: savedVoice=${savedVoice}`);
+        //debugLog(`loadKokoroVoices():2: savedVoice=${savedVoice}`);
         elements.voiceSelect.value = savedVoice;
-    }
+        saveTTSSettings(elements);
+        setSavedVoice(currentEngine, elements.voiceSelect.value);    }
     else
     {
         // No saved voice — default to the first available voice
         const firstKey = Object.keys(kokoroVoices)[0];
+        //debugLog(`loadKokoroVoices():3: savedVoice=${savedVoice}`);
         if (firstKey) {
             elements.voiceSelect.value = firstKey;
             const currentEngine = elements.engineSelect.value;
+            //debugLog(`loadKokoroVoices():4: savedVoice=${savedVoice}, currentEngine=${currentEngine}, elements.voiceSelect.value=${elements.voiceSelect.value}`);
+            saveTTSSettings(elements);
             setSavedVoice(currentEngine, elements.voiceSelect.value);
         }
     }
-    saveIfNoSettings(elements);
-    debugLog(`loadKokoroVoices():3: savedVoice=${savedVoice}`);
+    saveTTSSettings(elements);
+    setSavedVoice(currentEngine, elements.voiceSelect.value);
+    //debugLog(`loadKokoroVoices():5: savedVoice=${savedVoice}, currentEngine=${currentEngine}, elements.voiceSelect.value=${elements.voiceSelect.value}`);
 }
 
 /**

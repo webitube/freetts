@@ -9,7 +9,8 @@ import {
     debugWarn,
     debugWarnEnd,
     debugError,
-    debugErrorEnd
+    debugErrorEnd,
+    debugLogArray
 } from './debug-log.js'
 
 
@@ -152,7 +153,9 @@ const savedVoice = getSavedVoice(savedEngine);
 if (savedEngine === 'kokoro') {
     // Initialize Kokoro worker and load Kokoro voices
     kokoroPlayer.workerComm.initializeWorker().then(() => {
+        elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro TTS (loading...)</option>';
         if (kokoroPlayer.voices) {
+            //debugLogArray(`kokoroPlayer.voices`, Object.keys(kokoroPlayer.voices));
             loadKokoroVoices(elements, kokoroPlayer.voices, savedVoice);
         } else {
             elements.voiceSelect.innerHTML = '<option value="af_heart">Kokoro TTS (loading...)</option>';
@@ -162,9 +165,9 @@ if (savedEngine === 'kokoro') {
     // Load Web Speech voices
     voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedVoice);
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
-        debugLog(`WEBSPEECH VOICES LOADING...`, 'Load Web Speech voices')
+        debugLog(`app.js: WEBSPEECH VOICES LOADING...`, 'Load Web Speech voices')
         window.speechSynthesis.onvoiceschanged = () => {
-            debugLogEnd(`WEBSPEECH VOICES LOADED.`, 'Load Web Speech voices')
+            debugLogEnd(`app.js: WEBSPEECH VOICES LOADED.`, 'Load Web Speech voices')
             voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedSettings.voice);
             ttsController.voices = voices;
             saveIfNoSettings(elements);
@@ -218,6 +221,7 @@ elements.engineSelect.onchange = () => {
         kokoroPlayer.workerComm.initializeWorker().then(() => {
             debugLogEnd(`KOKORO VOICES: LOADED`, 'kokoroPlayer.workerComm.initializeWorker()');
             if (kokoroPlayer.voices) {
+                //debugLogArray(`kokoroPlayer.voices`, Object.keys(kokoroPlayer.voices));
                 loadKokoroVoices(elements, kokoroPlayer.voices, savedVoice);
             } else {
                 // Fallback: show placeholder
@@ -229,7 +233,9 @@ elements.engineSelect.onchange = () => {
         // Remove info indicator when switching away from Kokoro
         const kokoroInfo = document.getElementById('kokoro-mobile-info');
         if (kokoroInfo) kokoroInfo.remove();
+        debugLog(`Web Speech Voices: LOADING... -> savedVoice=${savedVoice}`);
         voices = loadWebSpeechVoices(elements, window.speechSynthesis, savedVoice);
+        debugLog(`Web Speech Voices: LOADED -> savedVoice=${savedVoice}`);
         ttsController.voices = voices;
     }
     updatePitchWarning(elements.pitchSlider);

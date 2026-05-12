@@ -33,7 +33,7 @@ const DEFAULT_SETTINGS = {
 };
 
 
-function hasSettings()
+export function hasSettings()
 {
     return localStorage.getItem(STORAGE_KEY) != undefined;
 }

@@ -17,6 +17,29 @@ export function repeatChar(length, char) {
   return String(char).repeat(length);
 }
 
+export function debugLogArray(title, msgs, timerName)
+{
+    const titleLen = title.length;
+    const header = repeatChar(titleLen + 8, '>');
+    console.log(header);
+    console.log(`>>> ${title} >>>`);
+
+    if (timerName != undefined)
+    {
+        console.time(`=== ${timerName} ===`);
+    }
+    for(const curr_msg of msgs)
+    {
+        debugLog(curr_msg);
+    }
+    if (timerName != undefined)
+    {
+        console.timeEnd(`=== ${timerName} ===`);
+    }
+
+    const footer = repeatChar(titleLen + 8, '<');
+    console.log(footer);
+}
 
 export function debugLog(msg, timerName = "")
 {
