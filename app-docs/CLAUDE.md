@@ -81,7 +81,10 @@ The app supports two TTS engines, selected via dropdown. TTS logic is managed by
 - Neural TTS engine running via ONNX Runtime Web in a Web Worker (`src/tts-worker.js`)
 - **WebGPU detection**: Main thread detects WebGPU availability (not available in worker context) and passes result to worker via `{ status: 'init', useWebGPU }` message
 - **Mobile Kokoro disable**: When Kokoro engine is selected on mobile (`isMobile`), the engine dropdown disables the Kokoro option and shows a "Kokoro disabled on mobile" info indicator next to the selector
-- Model loaded from Hugging Face (`onnx-community/Kokoro-82M-v1.0-ONNX`) on first use
+- Model loaded from Hugging Face (`onnx-community/Kokoro-82M-v1.0-ONNX`) on first use, cached in browser IndexedDB
+- **Download sizes**: WebGPU uses `model.onnx` (326 MB, fp32), WASM uses `model_q8f16.onnx` (86 MB, q8 quantized)
+- **Browser compatibility**: WebGPU only available in Chromium browsers (Chrome, Edge). Firefox and Safari fall back to the smaller WASM model (86 MB)
+- **First-use download**: A stable internet connection is required for the initial model download; subsequent uses are instant from cache
 - Text is split into chunks using `TextSplitterStream` and streamed back to the main thread as WAV audio blobs
 - **Device selection**: WebGPU uses `fp32` dtype, WASM uses `q8` dtype
 - **KokoroPlayer** (`src/kokoro-player.js`) renders each chunk as an independent `<audio>` element with controls

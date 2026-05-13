@@ -1,6 +1,6 @@
 # **FreeTTS**
 
-***Free Markdown Editor with integrated Web-based TTS. Lightweight. No downloads.***
+***Free Markdown Editor with integrated Web-based TTS. Lightweight. No downloads for Web Speech.***
 
 *This project is a single-file application designed for portability and ease of integration.*
 
@@ -33,6 +33,23 @@ Unlike standard screen readers, our TTS engine is optimized for Markdown:
 * **TTS Engine:** Native Web Speech API with custom regex cleaning logic.  
 * **Module Management:** ESM via [esm.sh](https://esm.sh/).
 
+## **Requirements**
+
+### **Web Speech API (No Downloads)**
+The Web Speech engine requires **no downloads or setup** — it uses the browser's built-in `SpeechSynthesis` API. Voice availability depends on the user's browser and operating system.
+
+### **Kokoro TTS (Neural Engine)**
+The Kokoro TTS engine requires downloading a neural TTS model from Hugging Face on first use. The model is cached in the browser's IndexedDB and only downloads once.
+
+| Backend | Model File | Size |
+|---------|-----------|------|
+| WebGPU | `model.onnx` | 326 MB |
+| WASM | `model_q8f16.onnx` | 86 MB |
+
+**Important:** The first time Kokoro TTS is used, the model download may take several minutes depending on your internet connection. A stable internet connection is required for the initial download. Subsequent uses are instant from cache.
+
+**Browser compatibility:** WebGPU is only available in Chromium-based browsers (Chrome, Edge). Firefox and Safari fall back to the smaller WASM model (86 MB).
+
 ## **How to Use**
 
 1. **Compose:** Type your Markdown in "Reveal Codes" mode for precision or "Visual" mode for comfort.  
@@ -56,3 +73,9 @@ The editor supports GitHub Flavored Markdown (GFM), including:
 ## **Development**
 
 For development, build, and deployment instructions, see [CLAUDE.md](./CLAUDE.md) and [DEVOPS.md](./DEVOPS.md).
+
+
+## **Acknowledgements**
+
+Kokoro TTS: https://github.com/hexgrad/kokoro
+

@@ -23,6 +23,13 @@ FreeTTS is a single‑page web application built with vanilla JavaScript and use
 - **Package manager:** npm
 - **Hosting:** GitHub Pages (static hosting)
 
+**Kokoro model download requirements:**
+- **WebGPU backend:** `model.onnx` — **326 MB** (fp32 precision)
+- **WASM backend:** `model_q8f16.onnx` — **86 MB** (q8 quantized)
+- Model is downloaded from Hugging Face (`onnx-community/Kokoro-82M-v1.0-ONNX`) on first use and cached in browser IndexedDB
+- A stable internet connection is required for the initial download; subsequent uses are instant from cache
+- WebGPU (Chromium browsers) uses the 326 MB model; Firefox/Safari fall back to the 86 MB WASM model
+
 ## Prerequisites
 
 - **Node.js** version 18 or later (includes npm)
