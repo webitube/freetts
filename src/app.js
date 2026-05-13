@@ -91,6 +91,7 @@ saveIfNoSettings(elements);
 
 // Initialize KokoroPlayer
 const kokoroPlayer = new KokoroPlayer('kokoro-chunk-list', (msg) => {
+    // statusCallback
     if (elements.ttsStatus) elements.ttsStatus.textContent = msg;
     // Show download button when Kokoro TTS is active and has merged audio
     const dlBtn = document.getElementById('download-audio');
@@ -98,12 +99,23 @@ const kokoroPlayer = new KokoroPlayer('kokoro-chunk-list', (msg) => {
         dlBtn.classList.toggle('hidden', ttsController.getActiveEngine() !== 'kokoro' || !kokoroPlayer.mergedBlob);
     }
 }, (active) => {
+    // uiStateCallback
     // Sync isSpeaking state with the UI play/stop button
     ttsController.setIsSpeaking(active);
     elements.playIcon.classList.toggle('hidden', active);
     elements.stopIcon.classList.toggle('hidden', !active);
     elements.btnTts.classList.toggle('text-red-600', active);
     elements.btnTts.classList.toggle('text-blue-600', !active);
+}, (offset, length) => {
+    // scrollCallback
+    // Scroll source-editor textarea to show the highlighted text region
+    // This callback is stored and invoked from _onChunkPlay, not here
+    kokoroPlayer.scrollToSelection(elements.source);
+}, () => {
+    // onPlayOverCallback: turn-off the selection
+    elements.source.focus();
+    const end = elements.source.selectionEnd;
+    elements.source.setSelectionRange(end, end);
 });
 
 // Initialize TTS Controller
@@ -156,6 +168,7 @@ const savedSettings = loadTTSSettings(elements);
 // Load voices for the restored engine
 let voices = [];
 const savedEngine = elements.engineSelect.value;
+ttsController.setActiveEngine(savedEngine);
 const savedVoice = getSavedVoice(savedEngine);
 elements.voiceSelect.innerHTML = '<option value="">LOADING...</option>';
 if (savedEngine === 'kokoro') {
@@ -260,10 +273,13 @@ kokoroPlayer._onChunkPlay = (index) => {
 
     const offset = ttsController.kokoroStartOffset + chunkPos;
     const length = chunk.text.length;
+    const ratio = offset / length;
 
     if (editorManager.isCurrentlySourceMode()) {
         elements.source.focus();
         elements.source.setSelectionRange(offset, offset + length);
+        // Scroll the textarea so the highlighted text is visible
+        kokoroPlayer.scrollCallback?.(offset, length);
     } else {
         highlightVisualWord(offset, length, elements.visual);
     }

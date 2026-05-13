@@ -28,18 +28,19 @@ import {
     debugErrorEnd
 } from './debug-log.js'
 
-
-
 export class KokoroPlayer {
     /**
      * @param {string} containerId - ID of the DOM container for chunk list
      * @param {function(string): void} statusCallback - Called with status strings
      * @param {function(boolean): void} [uiStateCallback] - Called with isSpeaking state
+     * @param {function(number, number): void} [scrollCallback] - Called with text offset and length for scrolling the source textarea
      */
-    constructor(containerId, statusCallback, uiStateCallback) {
+    constructor(containerId, statusCallback, uiStateCallback, scrollCallback, onPlayOverCallback) {
         this.containerId = containerId;
         this.statusCallback = statusCallback;
         this.uiStateCallback = uiStateCallback;
+        this.scrollCallback = scrollCallback;
+        this.onPlayOverCallback = onPlayOverCallback;
 
         // Player state
         this.chunks = [];            // { text, audio: Blob }
@@ -220,6 +221,59 @@ export class KokoroPlayer {
         }
     }
 
+    /**
+     * Scroll the source-editor textarea to selection so the text region at the given offset
+     * and length is visible in the viewport.
+     * Uses proportional scroll position based on the character offset relative
+     * to the total text length, with smooth scrolling behavior.
+     * @param {number} offset - Character offset of the text region
+     * @param {number} length - Length of the text region
+     */    
+    scrollToSelection(textarea) {
+        const selectionStart = textarea.selectionStart;
+        const style = window.getComputedStyle(textarea);
+
+        // 1. Create a mirror div
+        const mirror = document.createElement('div');
+        const textareaStyles = [
+            'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing',
+            'textTransform', 'wordSpacing', 'textIndent', 'whiteSpace', 'wordBreak',
+            'paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom',
+            'borderLeftWidth', 'borderRightWidth', 'lineHeight', 'width'
+        ];
+
+        // 2. Copy textarea styles to the mirror
+        textareaStyles.forEach(prop => {
+            mirror.style[prop] = style[prop];
+        });
+
+        // Critical styling for accuracy
+        mirror.style.position = 'absolute';
+        mirror.style.visibility = 'hidden';
+        mirror.style.whiteSpace = 'pre-wrap';
+        mirror.style.wordWrap = 'break-word';
+        mirror.style.overflowY = 'scroll'; // Match textarea scrollbar width
+
+        // 3. Fill mirror with text up to selection and add a marker
+        const textBefore = textarea.value.substring(0, selectionStart);
+        mirror.textContent = textBefore;
+        
+        const marker = document.createElement('span');
+        marker.textContent = textarea.value.substring(selectionStart, selectionStart + 1) || '.';
+        mirror.appendChild(marker);
+
+        // 4. Calculate position and scroll
+        document.body.appendChild(mirror);
+        const markerTop = marker.offsetTop;
+        const textareaHeight = textarea.clientHeight;
+        
+        // Center the selection vertically in the textarea
+        textarea.scrollTop = markerTop - (textareaHeight / 2);
+
+        // Clean up
+        document.body.removeChild(mirror);
+    }
+
     // ─── Playback Helpers ────────────────────────────────────────────
 
     _playChunk(index) {
@@ -332,6 +386,8 @@ export class KokoroPlayer {
             this._setCardActive(index, false);
             this.currentChunkIndex = -1;
             this._setUIState(false);
+
+            this.onPlayOverCallback();
         }
     }
 
@@ -377,12 +433,12 @@ export class KokoroPlayer {
         }
         else
         {
-            debugLog(`_setCardPlaying(): index=${index}: playing=${playing}: container=${container}`);
+            //debugLog(`_setCardPlaying(): index=${index}: playing=${playing}: container=${container}`);
         }
 
         const card = container.querySelector(`[data-chunk="${index}"]`);
         if (card) {
-            debugLog(`_setCardPlaying(): card=${card}`);
+            //debugLog(`_setCardPlaying(): card=${card}`);
             card.classList.toggle('playing', playing);
         }
         else
