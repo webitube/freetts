@@ -62,7 +62,7 @@ import {
 } from './voice-manager.js';
 
 
-setDebugMode(true);
+setDebugMode(false);
 debugLog(`app.js: BEGIN...`);
 
 /**

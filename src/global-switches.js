@@ -10,7 +10,7 @@
  * Global debug mode flag. When true, all debugLog/debugWarn/debugError calls output to console.
  * @type {boolean}
  */
-let debugMode = true;
+let debugMode = false;
 
 /**
  * Enable or disable debug mode globally
