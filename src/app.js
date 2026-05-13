@@ -1,3 +1,26 @@
+/**
+ * app.js — FreeTTS Application Entry Point
+ * 
+ * Main initialization module for FreeTTS. Orchestrates module initialization,
+ * DOM setup, event handlers, and state synchronization between components.
+ * 
+ * Architecture:
+ * - EditorManager: Markdown editor (textarea + Milkdown WYSIWYG)
+ * - TTSController: TTS engine orchestration (Web Speech + Kokoro)
+ * - KokoroPlayer: Chunk-based Kokoro audio playback with mobile support
+ * - Settings persistence: localStorage sync for engine, voice, speed, pitch
+ * - Voice managers: Web Speech voice loading + Kokoro voice synchronization
+ * - UI manager: Theme toggle, help modal, clipboard/download, link interception
+ * 
+ * Keyboard shortcuts:
+ * - Ctrl+Enter / Cmd+Enter: Toggle TTS playback
+ * 
+ * Mobile considerations:
+ * - Kokoro TTS is disabled on mobile devices due to ONNX Runtime constraints
+ * - Mobile browsers show "Tap to play" indicators due to autoplay policies
+ * - Web Speech API available on all platforms
+ */
+
 import {
     getDebugMode,
     setDebugMode
@@ -42,7 +65,18 @@ import {
 setDebugMode(true);
 debugLog(`app.js: BEGIN...`);
 
-// Wait for DOM to be fully loaded before accessing elements
+/**
+ * Application initialization — runs when DOM is fully loaded.
+ * 
+ * Sets up:
+ * 1. Browser detection (Safari, mobile)
+ * 2. DOM element references
+ * 3. Module initialization (EditorManager, TTSController, KokoroPlayer)
+ * 4. UI initialization (theme, modal, clipboard)
+ * 5. Voice loading (Web Speech or Kokoro)
+ * 6. Event handlers (mode switching, engine switching, playback toggle)
+ * 7. Settings persistence and restoration
+ */
 document.addEventListener('DOMContentLoaded', async () => {
 
     // --- INITIAL DATA ---

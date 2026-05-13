@@ -23,34 +23,37 @@ FreeTTS is a vanilla JavaScript single-page app with no frontend framework. Appl
 
 ### Entry Point
 
-- **`src/app.js`** (~272 lines) — Main entry point: initializes all modules (`EditorManager`, `TTSController`, `KokoroPlayer`), handles DOMContentLoaded, sets up KokoroPlayer callbacks for status updates and speaking state sync
+- **`src/app.js`** (347 lines) — Main entry point: initializes all modules (`EditorManager`, `TTSController`, `KokoroPlayer`), handles DOMContentLoaded, sets up callbacks for status updates and speaking state sync, manages editor mode switching, TTS engine selection, voice loading, and keyboard shortcuts (Ctrl+Enter)
 
 ### Editor Module
 
-- **`src/editor-manager.js`** (~104 lines) — `EditorManager` class: Milkdown editor initialization, mode switching between Reveal Codes (textarea) and Visual (WYSIWYG). Initializes Milkdown lazily on first switch to Visual mode.
+- **`src/editor-manager.js`** (100 lines) — `EditorManager` class: Milkdown editor initialization, lazy loading, mode switching between Reveal Codes (textarea) and Visual (WYSIWYG), markdown content synchronization
 
-### TTS Module
+### TTS Controller Module
 
-- **`src/tts-controller.js`** (~177 lines) — `TTSController` class: TTS playback logic for both Web Speech and Kokoro engines, word highlighting, pitch conversion, state management (`isSpeaking`, `activeEngine`, `kokoroTextToSpeak`)
+- **`src/tts-controller.js`** (187 lines) — `TTSController` class: main TTS playback logic for both Web Speech API and Kokoro engines, selection-aware playback, word-level highlighting sync, pitch conversion (non-Safari: `1 + pitch/12`), state management (`isSpeaking`, `activeEngine`, `kokoroTextToSpeak`)
 
-### Kokoro Module
+### Kokoro TTS Module
 
-- **`src/kokoro-player.js`** (~347 lines) — `KokoroPlayer` class: chunk-based audio playback with mobile autoplay handling, incremental card rendering, merged audio download
-- **`src/kokoro-audio-player.js`** (~78 lines) — Audio playback control helpers for Kokoro chunks
-- **`src/kokoro-chunk-manager.js`** (~43 lines) — Chunk state management for Kokoro audio generation
-- **`src/kokoro-chunk-renderer.js`** (~113 lines) — Chunk card DOM rendering with incremental append
-- **`src/kokoro-ui-manager.js`** (~87 lines) — Kokoro-specific UI elements (download button, status display)
-- **`src/kokoro-worker-communication.js`** (~150 lines) — Worker message handling (init, text, audio, status, errors)
+- **`src/kokoro-player.js`** (530 lines) — `KokoroPlayer` class: chunk-based audio playback orchestration, mobile autoplay policy handling (muted start + tap-to-play indicators), incremental card rendering and DOM updates, merged audio download, scroll synchronization, active chunk highlighting
+- **`src/kokoro-audio-player.js`** (97 lines) — `AudioPlayer` class: chunk audio element lifecycle management, playback control, error handling
+- **`src/kokoro-chunk-manager.js`** (54 lines) — `ChunkManager` class: chunk state delegation and mobile browser detection
+- **`src/kokoro-chunk-renderer.js`** (140 lines) — `ChunkRenderer` class: chunk card DOM creation, seek-by-click handling, audio element creation with WAV format metadata for mobile compatibility
+- **`src/kokoro-ui-manager.js`** (113 lines) — `UIManager` class: status display, error messages, chunk card management, HTML escaping for XSS prevention
+- **`src/kokoro-worker-communication.js`** (177 lines) — `WorkerCommunication` class: Web Worker initialization, WebGPU detection, message handling (init, stream chunks, completion, errors), device selection (WebGPU `fp32` vs WASM `q8`)
 
-### Shared Utilities
+### Web Worker
 
-- **`src/tts-worker.js`** (~73 lines) — Web Worker that runs `kokoro-js` (ONNX Runtime) with `TextSplitterStream` for streaming TTS generation
-- **`src/settings-persistence.js`** (~154 lines) — `saveTTSSettings()`, `loadTTSSettings()`, `resetTTSSettings()`, `getSavedVoice()`, `saveIfNoSettings()` — localStorage persistence under `freetts-settings`
-- **`src/voice-manager.js`** (~98 lines) — `loadWebSpeechVoices()`, `loadKokoroVoices()`, `updatePitchWarning()` — voice loading and Kokoro voice sync
-- **`src/ui-manager.js`** (~90 lines) — `initThemeToggle()`, `initHelpModal()`, `initClipboardAndDownload()`, `setUIState()` — UI initialization and state updates
-- **`src/highlighting-utils.js`** (~72 lines) — `cleanMarkdown()`, `highlightVisualWord()`, `getVisualCursorInfo()` — text cleaning and word highlighting
-- **`src/debug-log.js`** (~95 lines) — `debugLog()`, `debugWarn()`, `debugError()` with start/end markers
-- **`src/global-switches.js`** (~9 lines) — Global `debugMode` flag with `getDebugMode()`/`setDebugMode()`
+- **`src/tts-worker.js`** (89 lines) — Web Worker that runs `kokoro-js` (ONNX Runtime) with `TextSplitterStream` for streaming TTS generation, handles device backend selection, chunk streaming, and merged audio assembly
+
+### Shared Utilities & Persistence
+
+- **`src/settings-persistence.js`** (202 lines) — localStorage persistence module: `saveTTSSettings()`, `loadTTSSettings()`, `resetTTSSettings()`, `getSavedVoice()`, `setSavedVoice()`, `hasSettings()`, `saveIfNoSettings()` — persists engine, voice, speed, and pitch under key `freetts-settings` with backward compatibility for old voice index format
+- **`src/voice-manager.js`** (169 lines) — Voice loading and management: `loadWebSpeechVoices()` (async, handles `voiceschanged` event with 5s timeout), `loadKokoroVoices()` (syncs from worker), `populateVoiceSelect()` (UI population with voice selection restoration), `updatePitchWarning()` — voice name resolution with backward compatibility
+- **`src/ui-manager.js`** (104 lines) — UI initialization functions: `initThemeToggle()` (dark/light mode persistence), `initHelpModal()` (help modal controls), `initClipboardAndDownload()` (copy and download .md), `setUIState()` (play/stop button sync), `initLinkInterceptor()` (visual mode link handling)
+- **`src/highlighting-utils.js`** (72 lines) — Text processing utilities: `highlightVisualWord()` (TreeWalker-based DOM text highlighting), `getVisualCursorInfo()` (cursor position and text extraction), `cleanMarkdown()` (regex-based syntax stripping: `#*_~` backticks, link syntax, pipes)
+- **`src/debug-log.js`** (122 lines) — Debug logging utilities: `debugLog()`, `debugLogEnd()`, `debugWarn()`, `debugWarnEnd()`, `debugError()`, `debugErrorEnd()`, `debugLogArray()`, `repeatChar()` — formatted console output with optional timers
+- **`src/global-switches.js`** (9 lines) — Global state: `debugMode` flag with `getDebugMode()`/`setDebugMode()` accessors
 
 ### Editor Modes
 

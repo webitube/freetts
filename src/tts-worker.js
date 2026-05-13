@@ -1,11 +1,42 @@
+/**
+ * tts-worker.js — Web Worker for Kokoro TTS streaming
+ * 
+ * Runs KokoroTTS (ONNX Runtime) to generate speech from text chunks.
+ * Communicates with main thread via postMessage for streaming audio generation.
+ * 
+ * @requires kokoro-js — ONNX Runtime-based TTS engine
+ * 
+ * Worker Messages (from main thread):
+ * - { status: 'init', useWebGPU: boolean } — Initialize worker with device preference
+ * - { text, voice, speed } — Generate TTS for given text
+ * 
+ * Worker Messages (to main thread):
+ * - { status: 'device', device: string } — Confirms device selection (webgpu/wasm)
+ * - { status: 'ready', voices, device } — Model loaded, voices available
+ * - { status: 'stream', chunk } — New audio chunk streamed (text + WAV Blob)
+ * - { status: 'complete', mergedAudio } — All chunks done, merged WAV Blob
+ * - { status: 'error', data: string } — Error message
+ */
+
 import { KokoroTTS, TextSplitterStream } from 'kokoro-js';
 
 const MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 
-// The main thread detects WebGPU (navigator.gpu is NOT available inside a Worker)
-// and sends the result via { status: 'init', useWebGPU: true/false }.
+/**
+ * Whether to use WebGPU backend (true) or WASM fallback (false).
+ * Detected on main thread and sent via 'init' message.
+ * @type {boolean}
+ */
 let useWebGPU = false;
 
+/**
+ * Main worker entry point.
+ * 
+ * Waits for device initialization, loads Kokoro model, and listens for TTS requests.
+ * Each text submission triggers streaming generation of audio chunks.
+ * 
+ * @async
+ */
 async function main() {
     // Wait for the main thread to tell us which backend to use.
     const initDone = new Promise((resolve) => {

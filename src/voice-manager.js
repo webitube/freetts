@@ -1,6 +1,16 @@
 /**
- * VoiceManager handles loading and managing TTS voices for both
- * Web Speech API and Kokoro TTS engines.
+ * VoiceManager — Voice loading and management for TTS engines
+ * 
+ * Handles voice selection UI population and restoration for both
+ * Web Speech API (browser-provided voices) and Kokoro TTS engines.
+ * Includes backward compatibility for old voice index-based format.
+ * 
+ * Key features:
+ * - Web Speech voice loading with voiceschanged event handling
+ * - Async voice resolution with timeout fallback
+ * - Voice selection persistence and restoration
+ * - Kokoro voice synchronization from worker
+ * - Backward compatibility: old index format → new name format
  */
 
 import {
@@ -28,8 +38,11 @@ import {
 
 /**
  * Populate voice selector UI with the given voices array.
- * @param {Object} elements - DOM elements object
- * @param {Array} voices - Array of voice objects
+ * Restores previously saved voice selection if available.
+ * Handles backward compatibility for old voice index format.
+ * 
+ * @param {Object} elements - DOM elements object with voiceSelect dropdown
+ * @param {Array} voices - Array of voice objects with name and lang properties
  * @param {string} [savedVoice] - Previously saved voice name to restore
  */
 function populateVoiceSelect(elements, voices, savedVoice) {

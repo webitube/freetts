@@ -6,13 +6,13 @@ This document covers building, testing, deployment, and infrastructure for the F
 
 FreeTTS is a single‑page web application built with vanilla JavaScript and uses Vite as the build tool. The application features a hybrid Markdown editor (Milkdown) and a dual Text‑to‑Speech engine: the native Web Speech API and Kokoro TTS (a neural TTS engine powered by `kokoro-js` and ONNX Runtime Web, running in a Web Worker). The project is designed to be lightweight, portable, and easy to integrate.
 
-**Source structure (16 modular files in `src/`, ~1803 total lines):**
-- **Entry:** `app.js` (~272 lines) — initializes all modules, handles DOMContentLoaded, sets up KokoroPlayer callbacks
-- **Editor:** `editor-manager.js` (~104 lines) — `EditorManager` class: Milkdown init, mode switching
-- **TTS:** `tts-controller.js` (~177 lines) — `TTSController` class: playback logic for both engines
-- **Kokoro:** `kokoro-player.js` (~347), `kokoro-audio-player.js` (~78), `kokoro-chunk-manager.js` (~43), `kokoro-chunk-renderer.js` (~113), `kokoro-ui-manager.js` (~87), `kokoro-worker-communication.js` (~150)
-- **Worker:** `tts-worker.js` (~73 lines) — Web Worker running kokoro-js + onnxruntime-web
-- **Shared:** `settings-persistence.js` (~154), `voice-manager.js` (~98), `ui-manager.js` (~90), `highlighting-utils.js` (~72), `debug-log.js` (~95), `global-switches.js` (~9)
+**Source structure (16 modular files in `src/`, ~2,168 total lines):**
+- **Entry:** `app.js` (347 lines) — initializes all modules, handles DOMContentLoaded, sets up callbacks for all subsystems
+- **Editor:** `editor-manager.js` (100 lines) — `EditorManager` class: Milkdown initialization and mode switching
+- **TTS:** `tts-controller.js` (187 lines) — `TTSController` class: playback orchestration for both engines, selection-aware TTS
+- **Kokoro:** `kokoro-player.js` (530), `kokoro-audio-player.js` (97), `kokoro-chunk-manager.js` (54), `kokoro-chunk-renderer.js` (140), `kokoro-ui-manager.js` (113), `kokoro-worker-communication.js` (177)
+- **Worker:** `tts-worker.js` (89 lines) — Web Worker running kokoro-js + onnxruntime-web with streaming text splitting
+- **Shared:** `settings-persistence.js` (202), `voice-manager.js` (169), `ui-manager.js` (104), `highlighting-utils.js` (72), `debug-log.js` (122), `global-switches.js` (9)
 
 **Key technology stack:**
 - **Build tool:** Vite

@@ -12,22 +12,22 @@ Sixteen modular source files organized by concern:
 
 | File | Lines | Purpose |
 |---|---|---|
-| **app.js** | ~272 | Main entry point — initializes all modules, handles DOMContentLoaded, sets up KokoroPlayer callbacks |
-| **editor-manager.js** | ~104 | `EditorManager` class — Milkdown editor init, mode switching between Reveal Codes (textarea) and Visual (WYSIWYG) |
-| **tts-controller.js** | ~177 | `TTSController` class — TTS playback logic for both engines, word highlighting, pitch conversion, state management |
-| **kokoro-player.js** | ~347 | `KokoroPlayer` class — chunk-based audio playback with mobile autoplay handling, incremental card rendering, merged audio download |
-| **tts-worker.js** | ~73 | Web Worker running `kokoro-js` (ONNX Runtime) with `TextSplitterStream` for streaming TTS generation |
-| **settings-persistence.js** | ~154 | `saveTTSSettings()`, `loadTTSSettings()`, `resetTTSSettings()` — localStorage persistence under `freetts-settings` |
-| **voice-manager.js** | ~98 | `loadWebSpeechVoices()`, `loadKokoroVoices()`, `updatePitchWarning()` — voice loading and Kokoro voice sync |
-| **ui-manager.js** | ~90 | `initThemeToggle()`, `initHelpModal()`, `initClipboardAndDownload()`, `setUIState()` — UI initialization |
-| **highlighting-utils.js** | ~72 | `cleanMarkdown()`, `highlightVisualWord()`, `getVisualCursorInfo()` — text cleaning and word highlighting |
-| **debug-log.js** | ~95 | `debugLog()`, `debugWarn()`, `debugError()` — structured debug logging with start/end markers |
-| **kokoro-audio-player.js** | ~78 | Audio playback control helpers for Kokoro chunks |
-| **kokoro-chunk-manager.js** | ~43 | Chunk state management for Kokoro audio generation |
-| **kokoro-chunk-renderer.js** | ~113 | Chunk card DOM rendering with incremental append |
-| **kokoro-ui-manager.js** | ~87 | Kokoro-specific UI elements (download button, status display) |
-| **kokoro-worker-communication.js** | ~150 | Worker message handling (init, text, audio, status, errors) |
-| **global-switches.js** | ~9 | Global `debugMode` flag with `getDebugMode()`/`setDebugMode()` |
+| **app.js** | 347 | Main entry point — initializes modules, DOMContentLoaded handler, callbacks, mode/engine switching, keyboard shortcuts |
+| **editor-manager.js** | 100 | `EditorManager` class — Milkdown init, lazy loading, mode switching, content sync |
+| **tts-controller.js** | 187 | `TTSController` class — both TTS engines, selection-aware playback, word highlighting, pitch conversion |
+| **kokoro-player.js** | 530 | `KokoroPlayer` class — chunk orchestration, mobile autoplay, incremental rendering, scroll sync |
+| **tts-worker.js** | 89 | Web Worker running `kokoro-js` (ONNX Runtime) with streaming via `TextSplitterStream` |
+| **settings-persistence.js** | 202 | localStorage persistence: save/load/reset settings, voice management, backward compatibility |
+| **voice-manager.js** | 169 | Voice loading: Web Speech (async), Kokoro, UI population, selection restoration |
+| **ui-manager.js** | 104 | UI initialization: theme toggle, help modal, clipboard/download, link interception |
+| **highlighting-utils.js** | 72 | Text utilities: Visual mode highlighting, cursor info, Markdown syntax cleaning |
+| **debug-log.js** | 122 | Logging utilities: formatted output, timers, array logging |
+| **kokoro-audio-player.js** | 97 | `AudioPlayer` class — audio element lifecycle, playback control |
+| **kokoro-chunk-manager.js** | 54 | `ChunkManager` class — chunk state delegation, mobile detection |
+| **kokoro-chunk-renderer.js** | 140 | `ChunkRenderer` class — chunk card creation, seek handling, audio elements |
+| **kokoro-ui-manager.js** | 113 | `UIManager` class — status display, error handling, XSS prevention |
+| **kokoro-worker-communication.js** | 177 | `WorkerCommunication` class — worker init, WebGPU detection, message routing |
+| **global-switches.js** | 9 | Global state: `debugMode` flag with accessors |
 
 ### Key Features
 
