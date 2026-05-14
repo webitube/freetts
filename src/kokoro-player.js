@@ -48,6 +48,7 @@ export class KokoroPlayer {
         this.chunks = [];            // { text, audio: Blob }
         this.currentChunkIndex = -1;
         this.status = 'ready';       // 'loading' | 'ready' | 'generating' | 'error'
+        this.isSpeaking = false;
         this.mergedBlob = null;
         this.voices = null;
         
@@ -81,17 +82,18 @@ export class KokoroPlayer {
         this.chunks = [];
         this.currentChunkIndex = -1;
         this.mergedBlob = null;
-        this.status = 'generating';
-        this._setStatus(`Generating audio...`);
+        this._setStatusState(`generating`, `Generating audio...`);
         this._setUIState(true);
         this.renderChunks();
 
         await this.workerComm.initializeWorker();
 
         if (!this.workerComm.workerReady) {
-            this._setStatus('Model still loading...');
-            setTimeout(() => this._setStatus('Ready.'), 3000);
-            this.status = 'ready';
+            this._setStatusState('loading', 'Model still loading...');
+            setTimeout(() => {
+                this._setStatusState('ready', 'Ready.')
+            }, 3000);
+            this.setStatusState('ready', 'Ready.');
             this._setUIState(false);
             return;
         }
@@ -112,7 +114,7 @@ export class KokoroPlayer {
             });
         }
 
-        this.chunks = [];
+        //this.chunks = [];
         this.currentChunkIndex = -1;
         this.mergedBlob = null;
         this.status = 'ready';
@@ -158,7 +160,11 @@ export class KokoroPlayer {
      */
     _appendChunkCard(chunk, index) {
         const container = document.getElementById(this.containerId);
-        if (!container) return;
+        if (!container || !this.isSpeaking)
+        {
+            this._setStatusState('ready', "Ready.")
+            return;
+        }
 
         const card = this.chunkRenderer.createChunkCard(chunk, index);
         container.appendChild(card);
@@ -307,6 +313,7 @@ export class KokoroPlayer {
         // Mark card as playing immediately when playback is initiated
         // (the 'play' event doesn't fire reliably on muted audio elements)
         this._setCardPlaying(index, true);
+        this._setUIState(true);
 
         const playWhenReady = () => {
             audioEl.muted = false;
@@ -364,14 +371,17 @@ export class KokoroPlayer {
     // ─── Internal Callbacks ──────────────────────────────────────────
 
     _onChunkPlay(index) {
+        debugLog(`onChunkPlay(): index=${index}`);
         // Called when a chunk starts playing
         this._setCardPlaying(index, true);
+        this._setUIState(true);
     }
 
     _onChunkEnded(index) {
+        debugLog(`onChunkEnded(): index=${index}: isSpeaking=${this.isSpeaking}`);
         this._setCardPlaying(index, false);
         const nextIdx = index + 1;
-        if (nextIdx < this.chunks.length) {
+        if ((nextIdx < this.chunks.length) && this.isSpeaking) {
             this._setCardActive(index, false);
             this._setCardActive(nextIdx, true);
             this.currentChunkIndex = nextIdx;
@@ -411,10 +421,20 @@ export class KokoroPlayer {
 
     // ─── Status Helpers ──────────────────────────────────────────────
 
-    _setStatus(message) {
-        const statusEl = document.getElementById('status');
-        if (statusEl) {
-            statusEl.textContent = message;
+    _setStatusState(newStatus, statusMsg)
+    {
+        if (this.status != newStatus)
+        {
+            this.status = newStatus;
+            this._setStatusMsg(statusMsg);
+            this.statusCallback(statusMsg);
+        }
+    }
+
+    _setStatusMsg(message) {
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = message;
         }
     }
 
@@ -443,6 +463,7 @@ export class KokoroPlayer {
      * @param {boolean} playing - Whether the card is currently playing
      */
     _setCardPlaying(index, playing) {
+        debugLog(`_setCardPlaying(): ${index}, playing=${playing}`);
         const container = document.getElementById(this.containerId);
         if (!container)
         {
@@ -465,9 +486,19 @@ export class KokoroPlayer {
         }
     }
 
+    _getUIState()
+    {
+        return this.isSpeaking;
+    }
+
     _setUIState(isSpeaking) {
-        if (this.uiStateCallback) {
-            this.uiStateCallback(isSpeaking);
+        if (this.isSpeaking != isSpeaking)
+        {
+            this.isSpeaking = isSpeaking;
+            debugLog(`_setUIState(): isSpeaking=${isSpeaking}`);
+            if (this.uiStateCallback) {
+                this.uiStateCallback(isSpeaking);
+            }
         }
     }
 }

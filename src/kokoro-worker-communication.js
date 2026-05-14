@@ -61,13 +61,13 @@ export class WorkerCommunication {
         }
 
         this.workerInitializing = true;
-        this.player._setStatus('loading');
+        this.player._setStatusState('loading', "Loading...");
 
         this.worker = new Worker(new URL('./tts-worker.js', import.meta.url), { type: 'module' });
         this.worker.onmessage = this._handleWorkerMessage.bind(this);
         this.worker.onerror = (e) => {
             console.error('Worker error:', e);
-            this.player._setStatus('error');
+            this.player._setStatusState('error', "Error");
             this.player._setError(e.message);
         };
 
@@ -132,7 +132,7 @@ export class WorkerCommunication {
                 }
                 break;
             case 'error':
-                this.player.status = 'error';
+                this.player._setStatusState('error', "Error");
                 this.player._setError(data);
                 break;
         }

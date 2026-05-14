@@ -2,6 +2,8 @@
  * ChunkRenderer handles DOM rendering for chunk cards.
  */
 
+import { debugWarn } from "./debug-log";
+
 /**
  * ChunkRenderer manages chunk card DOM creation and manipulation
  */

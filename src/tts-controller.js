@@ -14,7 +14,7 @@ export class TTSController {
      * @param {Array} voices - Web Speech voices array
      * @param {boolean} isSafari - Whether running on Safari
      */
-    constructor(elements, editorManager, kokoroPlayer, highlightVisualWord, getVisualCursorInfo, voices, isSafari) {
+    constructor(elements, editorManager, kokoroPlayer, highlightVisualWord, getVisualCursorInfo, voices, isSafari, isSpeakingCallback) {
         this.elements = elements;
         this.editorManager = editorManager;
         this.kokoroPlayer = kokoroPlayer;
@@ -27,6 +27,8 @@ export class TTSController {
         this.speechOffsetStart = 0;
         this.kokoroTextToSpeak = '';
         this.kokoroStartOffset = 0;
+        this.isSpeakingCallback = isSpeakingCallback
+        this.isSpeakingCallback(this.isSpeaking);
     }
 
     /**
@@ -167,11 +169,11 @@ export class TTSController {
      * @param {boolean} active - Whether playback is active
      */
     setUIState(active) {
-        this.isSpeaking = active;
         this.elements.playIcon.classList.toggle('hidden', active);
         this.elements.stopIcon.classList.toggle('hidden', !active);
         this.elements.btnTts.classList.toggle('text-red-600', active);
         this.elements.btnTts.classList.toggle('text-blue-600', !active);
+        this.setIsSpeaking(active);
     }
 
     /**
@@ -187,6 +189,10 @@ export class TTSController {
      * @param {boolean} state - Speaking state
      */
     setIsSpeaking(state) {
-        this.isSpeaking = state;
+        if (this.isSpeaking != state)
+        {
+            this.isSpeaking = state;
+            this.isSpeakingCallback(state);
+        }
     }
 }

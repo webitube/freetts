@@ -139,6 +139,21 @@ const kokoroPlayer = new KokoroPlayer('kokoro-chunk-list', (msg) => {
     {
         msg = "Ready.";
     }
+    else
+    {
+        if (kokoroPlayer.status == "ready")
+        {
+            if (ttsController.getIsSpeaking())
+            {
+                msg = "Speaking..."
+            }
+            else
+            {
+                msg = "Ready.";
+            }
+        }
+    }
+
     document.getElementById('tts-status').textContent = msg;
 
     // Show download button when Kokoro TTS is active and has merged audio
@@ -188,7 +203,13 @@ const ttsController = new TTSController(
     highlightVisualWord,
     getVisualCursorInfo,
     [], // voices will be populated by loadWebSpeechVoices
-    isSafari
+    isSafari,
+    (isSpeaking) => {
+        debugLog(`ttsController.isSpeakingCallback(): isSpeaking=${isSpeaking}`);
+
+        const ttsStatus = document.getElementById('tts-status');
+        ttsStatus.textContent = isSpeaking ? "Speaking..." : "Ready.";
+    }
 );
 
 // --- UI INITIALIZATION ---
