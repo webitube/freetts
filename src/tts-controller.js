@@ -67,6 +67,15 @@ export class TTSController {
             return;
         }
 
+        // Auto-focus source editor and place cursor at start if not already focused
+        if (this.editorManager.isCurrentlySourceMode()) {
+            const sourceEl = this.elements.source;
+            if (document.activeElement !== sourceEl) {
+                sourceEl.focus();
+                sourceEl.setSelectionRange(0, 0);
+            }
+        }
+
         const selectionText = window.getSelection().toString().trim();
         let textToSpeak = '';
         let startOffset = 0;
