@@ -36,6 +36,11 @@ import {
     debugLogArray
 } from './debug-log.js'
 
+import {
+    updateStatusMsg,
+    capitalizeMsg,
+    updateSelectedEngine
+} from './app-utils.js';
 
 import { EditorManager } from './editor-manager.js';
 import { TTSController } from './tts-controller.js';
@@ -60,9 +65,10 @@ import {
     loadKokoroVoices, 
     updatePitchWarning
 } from './voice-manager.js';
+import { format } from 'vitest/internal/browser';
 
 
-setDebugMode(false);
+setDebugMode(true);
 debugLog(`app.js: BEGIN...`);
 
 /**
@@ -103,8 +109,8 @@ const elements = {
     speedVal: document.getElementById('speed-val'),
     pitchSlider: document.getElementById('tts-pitch'),
     pitchVal: document.getElementById('pitch-val'),
-    status: document.getElementById('status-msg'),
     ttsStatus: document.getElementById('tts-status'),
+    activeDeviceMsg: document.getElementById('active-device-msg'),
     playIcon: document.getElementById('play-icon'),
     stopIcon: document.getElementById('stop-icon'),
     helpToggle: document.getElementById('help-toggle'),
@@ -125,28 +131,50 @@ saveIfNoSettings(elements);
 
 // Initialize KokoroPlayer
 const kokoroPlayer = new KokoroPlayer('kokoro-chunk-list', (msg) => {
-    // statusCallback
-    if (elements.ttsStatus) elements.ttsStatus.textContent = msg;
+    //---------------------------------------------------------------------------
+    // statusCallback - Kokoro-specific status goes to ttsStatus element
+    //---------------------------------------------------------------------------
+    //updateStatusMsg(elements.ttsStatus, msg, kokoroPlayer.activeDevice);
+    if (msg.length == 0)
+    {
+        msg = "Ready.";
+    }
+    document.getElementById('tts-status').textContent = msg;
+
     // Show download button when Kokoro TTS is active and has merged audio
     const dlBtn = document.getElementById('download-audio');
     if (dlBtn) {
         dlBtn.classList.toggle('hidden', ttsController.getActiveEngine() !== 'kokoro' || !kokoroPlayer.mergedBlob);
     }
+}, (activeDevice) => {
+    //---------------------------------------------------------------------------
+    // activeDeviceCallback: Update the TTS active-device-msg
+    //---------------------------------------------------------------------------
+    //elements.activeDeviceMsg.textContent = `TTS: ${activeDevice.toUpperCase()}`;
+    //const selectedEngine = elements.engineSelect.options[elements.engineSelect.selectedIndex].text;
+    //document.getElementById('active-device-msg').textContent = `${selectedEngine}: ${activeDevice.toLocaleUpperCase()}`;
+    updateSelectedEngine(kokoroPlayer.getActiveDevice());
 }, (active) => {
+    //---------------------------------------------------------------------------
     // uiStateCallback
     // Sync isSpeaking state with the UI play/stop button
+    //---------------------------------------------------------------------------
     ttsController.setIsSpeaking(active);
     elements.playIcon.classList.toggle('hidden', active);
     elements.stopIcon.classList.toggle('hidden', !active);
     elements.btnTts.classList.toggle('text-red-600', active);
     elements.btnTts.classList.toggle('text-blue-600', !active);
 }, (offset, length) => {
+    //---------------------------------------------------------------------------
     // scrollCallback
     // Scroll source-editor textarea to show the highlighted text region
     // This callback is stored and invoked from _onChunkPlay, not here
+    //---------------------------------------------------------------------------
     kokoroPlayer.scrollToSelection(elements.source);
 }, () => {
+    //---------------------------------------------------------------------------
     // onPlayOverCallback: turn-off the selection
+    //---------------------------------------------------------------------------
     elements.source.focus();
     const end = elements.source.selectionEnd;
     elements.source.setSelectionRange(end, end);
@@ -167,7 +195,7 @@ const ttsController = new TTSController(
 initThemeToggle(elements.themeToggle);
 initHelpModal(elements);
 initClipboardAndDownload(elements, (msg) => {
-    if (elements.status) elements.status.textContent = msg;
+    updateStatusMsg(elements.ttsStatus, msg, kokoroPlayer.getActiveDevice());
 });
 
 // --- SLIDER DISPLAY ---
@@ -190,7 +218,7 @@ elements.voiceSelect.onchange = () => {
 if (elements.resetSettings) {
     elements.resetSettings.onclick = () => {
         resetTTSSettings(elements, (msg) => {
-            if (elements.status) elements.status.textContent = msg;
+            updateStatusMsg(elements.ttsStatus, msg, kokoroPlayer.getActiveDevice());
         }, editorManager);
     };
 }
@@ -226,10 +254,11 @@ updatePitchWarning(elements.pitchSlider);
 
 // --- ENGINE SWITCH ---
 elements.engineSelect.onchange = async () => {
-        const engine = elements.engineSelect.value;
-        const savedVoice = getSavedVoice(engine);
-        debugLog(`engineSelect.onchange(): savedVoice=${savedVoice}`);
-        elements.voiceSelect.innerHTML = '<option value="">LOADING...</option>';
+    const engine = elements.engineSelect.value;
+    const savedVoice = getSavedVoice(engine);
+    debugLog(`engineSelect.onchange(): savedVoice=${savedVoice}`);
+    elements.voiceSelect.innerHTML = '<option value="">LOADING...</option>';
+    updateSelectedEngine(kokoroPlayer.getActiveDevice());
     
     if (engine === 'kokoro') {
         // Mobile Kokoro UX: Show info message and disable Kokoro on mobile
@@ -326,7 +355,7 @@ elements.btnTts.onclick = () => {
         () => ttsController.stopKokoro(),
         () => loadTTSSettings(elements),
         (msg) => {
-            if (elements.status) elements.status.textContent = msg;
+            updateStatusMsg(elements.ttsStatus, msg, kokoroPlayer.getActiveDevice());
         }
     );
 };
@@ -340,7 +369,7 @@ document.addEventListener('keydown', (e) => {
             () => ttsController.stopKokoro(),
             () => loadTTSSettings(elements),
             (msg) => {
-                if (elements.status) elements.status.textContent = msg;
+                updateStatusMsg(elements.ttsStatus, msg, kokoroPlayer.getActiveDevice());
             }
         );
     }
@@ -352,5 +381,5 @@ document.getElementById('download-audio').onclick = () => {
 };
 });
 
-
+updateSelectedEngine();
 debugLog(`app.js: END.`);

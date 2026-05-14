@@ -32,12 +32,14 @@ export class KokoroPlayer {
     /**
      * @param {string} containerId - ID of the DOM container for chunk list
      * @param {function(string): void} statusCallback - Called with status strings
+     * @param {function(string): void} activeDeviceCallback - Called with active device string
      * @param {function(boolean): void} [uiStateCallback] - Called with isSpeaking state
      * @param {function(number, number): void} [scrollCallback] - Called with text offset and length for scrolling the source textarea
      */
-    constructor(containerId, statusCallback, uiStateCallback, scrollCallback, onPlayOverCallback) {
+    constructor(containerId, statusCallback, activeDeviceCallback, uiStateCallback, scrollCallback, onPlayOverCallback) {
         this.containerId = containerId;
         this.statusCallback = statusCallback;
+        this.activeDeviceCallback = activeDeviceCallback;
         this.uiStateCallback = uiStateCallback;
         this.scrollCallback = scrollCallback;
         this.onPlayOverCallback = onPlayOverCallback;
@@ -48,6 +50,9 @@ export class KokoroPlayer {
         this.status = 'ready';       // 'loading' | 'ready' | 'generating' | 'error'
         this.mergedBlob = null;
         this.voices = null;
+        
+        // Kokoro backend device (WebGPU or WASM)
+        this.activeDevice = null;
         
         // Mobile browser detection - autoplay policies are much stricter on mobile
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -62,6 +67,11 @@ export class KokoroPlayer {
     }
 
     // ─── Public API ──────────────────────────────────────────────────
+
+    setActiveDevice(newActiveDevice) {
+        this.activeDevice = newActiveDevice;
+        this.activeDeviceCallback(newActiveDevice);
+    }
 
     /**
      * Start TTS playback. If the model isn't ready, initializes it first.
@@ -125,6 +135,14 @@ export class KokoroPlayer {
     destroy() {
         this.audioPlayer.cleanup();
         this.workerComm.destroy();
+    }
+
+    /**
+     * Get the active Kokoro backend device indicator string.
+     * @returns {string} The device indicator (e.g., " (WebGPU)" or " (WASM)") or empty string if not available.
+     */
+    getActiveDevice() {
+        return this.activeDevice ? this.activeDevice.toUpperCase() : '';
     }
 
     // ─── Rendering ───────────────────────────────────────────────────

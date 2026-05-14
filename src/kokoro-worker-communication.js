@@ -96,14 +96,14 @@ export class WorkerCommunication {
 
         switch (status) {
             case 'device':
-                this.player.statusCallback(`Kokoro TTS: using ${device.toUpperCase()}`);
+                // Store the active Kokoro backend device
+                this.player.setActiveDevice(device);
                 break;
             case 'ready':
                 this.workerReady = true;
                 this.workerInitializing = false;
                 this.player.voices = voices;
-                this.player.statusCallback('Kokoro TTS ready.');
-                setTimeout(() => this.player.statusCallback(''), 3000);
+                setTimeout(() => this.player.statusCallback('Ready.'), 3000);
                 break;
             case 'stream':
                 this.player.chunks.push(chunk);
