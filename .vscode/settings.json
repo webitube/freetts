@@ -3,6 +3,8 @@
         "~/.copilotagents": true
     },
     "chat.tools.terminal.autoApprove": {
-        "npx vitest": true
+        "npx vitest": true,
+        "Test-Path": true,
+        "npm install": true
     }
 }
