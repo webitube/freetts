@@ -168,7 +168,24 @@ export class KokoroPlayer {
 
         const card = this.chunkRenderer.createChunkCard(chunk, index, (event, cardIndex) => {
             // @param {function(event: string, card index: integer): void} eventCallback - Callback for audio events
+            // event: play, pause, ended, waiting, playing
             const card = container.children[index];
+            if (event == 'playing')
+            {
+                card.classList.add('playing');
+                card.classList.add('active');
+            }
+            else if (event == 'ended')
+            {
+                card.classList.remove('playing');
+                const isLastCard = index == (container.children.length - 1);
+                if (!isLastCard)
+                {
+                    const nextCardIndex = index + 1;
+                    this._playChunk(nextCardIndex);
+                    debugLog(`kokoro-player.audioEventCallback(): Play next chunk: ${nextCardIndex}`);
+                }
+            }
             debugLog(`kokoro-player.audioEventCallback(): PLAY: event=${event}: index=${index}, cardIndex=${cardIndex}: card.id=${card.id}`);
         });
         container.appendChild(card);
