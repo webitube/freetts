@@ -2,6 +2,8 @@
  * AudioPlayer handles chunk-based audio playback for Kokoro TTS.
  * Each audio chunk is rendered as an independent <audio> element.
  */
+import { debugLog, debugWarn, debugError } from "./debug-log";
+
 
 /**
  * AudioPlayer manages chunk-based audio playback
@@ -50,6 +52,7 @@ export class AudioPlayer {
     playChunk(chunkIndex) {
         const audio = this.audioElements[chunkIndex];
         if (audio) {
+            debugLog(`kokoro-audio-player.playChunk(): Playing chunk ${chunkIndex}`);
             audio.play().catch(err => {
                 console.warn('Playback failed:', err);
                 this.player._onChunkEnded(chunkIndex);
@@ -63,6 +66,7 @@ export class AudioPlayer {
     stopAll() {
         this.audioElements.forEach(audio => {
             if (audio) {
+                debugLog(`kokoro-audio-player.stopAll(): ${audio.chunkIndex}`);
                 audio.pause();
                 audio.currentTime = 0;
             }

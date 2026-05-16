@@ -166,7 +166,11 @@ export class KokoroPlayer {
             return;
         }
 
-        const card = this.chunkRenderer.createChunkCard(chunk, index);
+        const card = this.chunkRenderer.createChunkCard(chunk, index, (event, cardIndex) => {
+            // @param {function(event: string, card index: integer): void} eventCallback - Callback for audio events
+            const card = container.children[index];
+            debugLog(`kokoro-player.audioEventCallback(): PLAY: event=${event}: index=${index}, cardIndex=${cardIndex}: card.id=${card.id}`);
+        });
         container.appendChild(card);
     }
 
@@ -372,7 +376,8 @@ export class KokoroPlayer {
 
     _onChunkPlay(index) {
         debugLog(`onChunkPlay(): index=${index}`);
-        // Called when a chunk starts playing
+        // Called when a chunk starts playing (via play event or fallback)
+        // Always update the playing state to ensure highlighting works
         this._setCardPlaying(index, true);
         this._setUIState(true);
     }
@@ -486,6 +491,18 @@ export class KokoroPlayer {
         }
     }
 
+    /**
+     * Check if a chunk card is currently playing
+     * @param {number} index - Chunk index
+     * @returns {boolean}
+     */
+    _isCardPlaying(index) {
+        const container = document.getElementById(this.containerId);
+        if (!container) return false;
+        const card = container.querySelector(`[data-chunk="${index}"]`);
+        return card ? card.classList.contains('playing') : false;
+    }
+
     _getUIState()
     {
         return this.isSpeaking;
@@ -500,5 +517,10 @@ export class KokoroPlayer {
                 this.uiStateCallback(isSpeaking);
             }
         }
+    }
+
+    _updatePlayButton(index, isPlaying)
+    {
+        this.uiStateCallback(isPlaying);
     }
 }
