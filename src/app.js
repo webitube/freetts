@@ -68,7 +68,7 @@ import {
 import { format } from 'vitest/internal/browser';
 
 
-setDebugMode(true);
+setDebugMode(false);
 debugLog(`app.js: BEGIN...`);
 
 /**
@@ -205,7 +205,7 @@ const ttsController = new TTSController(
     [], // voices will be populated by loadWebSpeechVoices
     isSafari,
     (isSpeaking) => {
-        debugLog(`ttsController.isSpeakingCallback(): isSpeaking=${isSpeaking}`);
+        //debugLog(`ttsController.isSpeakingCallback(): isSpeaking=${isSpeaking}`);
 
         const ttsStatus = document.getElementById('tts-status');
         ttsStatus.textContent = isSpeaking ? "Speaking..." : "Ready.";

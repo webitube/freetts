@@ -115,7 +115,7 @@ export class ChunkRenderer {
         audioEl.id = `audio-chunk-${index}`;
         audioEl.setAttribute('data-chunk', index);
         audioEl.src = URL.createObjectURL(chunk.audio);
-        debugLog(`kokoro-chunk-renderer.createAudioElement(): id=${audioEl.id}: Created audio element for chunk ${index} with blob URL ${audioEl.src}`);
+        //debugLog(`kokoro-chunk-renderer.createAudioElement(): id=${audioEl.id}: Created audio element for chunk ${index} with blob URL ${audioEl.src}`);
 
         // Register with AudioPlayer so playChunk() can find it
         this.player.audioPlayer.registerAudioElement(index, audioEl);
@@ -132,32 +132,32 @@ export class ChunkRenderer {
 
         // Event hooks for auto-advance
         audioEl.addEventListener('play', () => {
-            debugLog(`kokoro-chunk-renderer.createAudioElement(): event='play': id=${audioEl.id}: Audio element for chunk ${index} to get ready to start playing`);
+            //debugLog(`kokoro-chunk-renderer.createAudioElement(): event='play': id=${audioEl.id}: Audio element for chunk ${index} to get ready to start playing`);
             this.player._onChunkPlay(index);
             // Update play button to pause icon
             this.player._updatePlayButton(index, true);
             eventCallback && eventCallback('play', index);
         });
         audioEl.addEventListener('pause', () => {
-            debugLog(`kokoro-chunk-renderer.createAudioElement(): event='pause': id=${audioEl.id}: Audio element for chunk ${index} paused`);
+            //debugLog(`kokoro-chunk-renderer.createAudioElement(): event='pause': id=${audioEl.id}: Audio element for chunk ${index} paused`);
             // Update play button to play icon
             this.player._updatePlayButton(index, false);
             eventCallback && eventCallback('pause', index);
         });
         audioEl.addEventListener('ended', () => {
-            debugLog(`kokoro-chunk-renderer.createAudioElement(): event='ended': id=${audioEl.id}: Audio element for chunk ${index} ended`);
+            //debugLog(`kokoro-chunk-renderer.createAudioElement(): event='ended': id=${audioEl.id}: Audio element for chunk ${index} ended`);
             this.player._onChunkEnded(index);
             eventCallback && eventCallback('ended', index);
         });
         audioEl.addEventListener('waiting', () => {
             // Show pause icon when audio is waiting to play
-            debugLog(`kokoro-chunk-renderer.createAudioElement(): event='waiting': id=${audioEl.id}: Audio element for chunk ${index} is waiting`);
+            //debugLog(`kokoro-chunk-renderer.createAudioElement(): event='waiting': id=${audioEl.id}: Audio element for chunk ${index} is waiting`);
             this.player._updatePlayButton(index, true);
             eventCallback && eventCallback('waiting', index);
         });
         audioEl.addEventListener('playing', () => {
             // Show pause icon when audio starts playing
-            debugLog(`kokoro-chunk-renderer.createAudioElement(): event='playing': id=${audioEl.id}: Audio element for chunk ${index} is now playing...`);
+            //debugLog(`kokoro-chunk-renderer.createAudioElement(): event='playing': id=${audioEl.id}: Audio element for chunk ${index} is now playing...`);
             this.player._updatePlayButton(index, true);
             eventCallback && eventCallback('playing', index);
         });
@@ -165,7 +165,7 @@ export class ChunkRenderer {
         // Fallback: use playbackstatechange to detect when audio starts playing
         // This ensures _onChunkPlay() is called even for muted audio elements
         audioEl.addEventListener('playbackstatechange', () => {
-            debugLog(`kokoro-chunk-renderer.createAudioElement(): id=${audioEl.id}: Audio element for chunk ${index} playback state changed to ${audioEl.playbackState}`);
+            //debugLog(`kokoro-chunk-renderer.createAudioElement(): id=${audioEl.id}: Audio element for chunk ${index} playback state changed to ${audioEl.playbackState}`);
             if (audioEl.playbackState === 2) { // PLAYING
                 if (!this.player._isCardPlaying(index)) {
                     this.player._onChunkPlay(index);

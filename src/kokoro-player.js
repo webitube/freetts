@@ -183,10 +183,10 @@ export class KokoroPlayer {
                 {
                     const nextCardIndex = index + 1;
                     this._playChunk(nextCardIndex);
-                    debugLog(`kokoro-player.audioEventCallback(): Play next chunk: ${nextCardIndex}`);
+                    //debugLog(`kokoro-player.audioEventCallback(): Play next chunk: ${nextCardIndex}`);
                 }
             }
-            debugLog(`kokoro-player.audioEventCallback(): PLAY: event=${event}: index=${index}, cardIndex=${cardIndex}: card.id=${card.id}`);
+            //debugLog(`kokoro-player.audioEventCallback(): PLAY: event=${event}: index=${index}, cardIndex=${cardIndex}: card.id=${card.id}`);
         });
         container.appendChild(card);
     }
@@ -392,7 +392,7 @@ export class KokoroPlayer {
     // ─── Internal Callbacks ──────────────────────────────────────────
 
     _onChunkPlay(index) {
-        debugLog(`onChunkPlay(): index=${index}`);
+        //debugLog(`onChunkPlay(): index=${index}`);
         // Called when a chunk starts playing (via play event or fallback)
         // Always update the playing state to ensure highlighting works
         this._setCardPlaying(index, true);
@@ -400,7 +400,7 @@ export class KokoroPlayer {
     }
 
     _onChunkEnded(index) {
-        debugLog(`onChunkEnded(): index=${index}: isSpeaking=${this.isSpeaking}`);
+        //debugLog(`onChunkEnded(): index=${index}: isSpeaking=${this.isSpeaking}`);
         this._setCardPlaying(index, false);
         const nextIdx = index + 1;
         if ((nextIdx < this.chunks.length) && this.isSpeaking) {
@@ -485,7 +485,7 @@ export class KokoroPlayer {
      * @param {boolean} playing - Whether the card is currently playing
      */
     _setCardPlaying(index, playing) {
-        debugLog(`_setCardPlaying(): ${index}, playing=${playing}`);
+        //debugLog(`_setCardPlaying(): ${index}, playing=${playing}`);
         const container = document.getElementById(this.containerId);
         if (!container)
         {
@@ -529,7 +529,7 @@ export class KokoroPlayer {
         if (this.isSpeaking != isSpeaking)
         {
             this.isSpeaking = isSpeaking;
-            debugLog(`_setUIState(): isSpeaking=${isSpeaking}`);
+            //debugLog(`_setUIState(): isSpeaking=${isSpeaking}`);
             if (this.uiStateCallback) {
                 this.uiStateCallback(isSpeaking);
             }
