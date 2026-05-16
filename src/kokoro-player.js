@@ -93,7 +93,7 @@ export class KokoroPlayer {
             setTimeout(() => {
                 this._setStatusState('ready', 'Ready.')
             }, 3000);
-            this.setStatusState('ready', 'Ready.');
+            this._setStatusState('ready', 'Ready.');
             this._setUIState(false);
             return;
         }
