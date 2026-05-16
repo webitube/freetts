@@ -103,7 +103,7 @@ npx vitest run -t "editor"
 1. Run: `npx vitest run tests/unit/global-switches.test.js`
 2. Verify: `getDebugMode()` returns correct boolean values
 3. Verify: `setDebugMode()` updates internal state
-4. Verify: Default value is `true`
+4. Verify: `getDebugMode()` returns the module-initialized state without prior mutation
 
 ### 2. Highlighting Utils Tests
 

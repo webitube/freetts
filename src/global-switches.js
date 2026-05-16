@@ -8,6 +8,7 @@
 
 /**
  * Global debug mode flag. When true, all debugLog/debugWarn/debugError calls output to console.
+ * Defaults to false so logging is disabled until explicitly enabled.
  * @type {boolean}
  */
 let debugMode = false;

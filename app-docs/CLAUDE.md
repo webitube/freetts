@@ -126,7 +126,7 @@ Managed via class instances and module-level variables across the modular source
 - `STORAGE_KEY = 'freetts-settings'` — localStorage persistence for engine, voice, speed, pitch
 
 **`src/global-switches.js`:**
-- `debugMode` — global debug flag controlled by `getDebugMode()`/`setDebugMode()`
+- `debugMode` — global debug flag controlled by `getDebugMode()`/`setDebugMode()`; defaults to `false`
 
 ### Settings Persistence
 
