@@ -21,6 +21,18 @@ export function updateStatusMsg(status, msg, device) {
     }
 }
 
+export function resetStatusAfterDelay(statusCallback, delay = 2000, readyMessage = 'Ready.') {
+    if (typeof statusCallback === 'function') {
+        setTimeout(() => statusCallback(readyMessage), delay);
+    }
+}
+
+export function toggleHidden(element, hidden) {
+    if (element) {
+        element.classList.toggle('hidden', hidden);
+    }
+}
+
 export function capitalizeMsg(original) {
     return original.charAt(0).toUpperCase() + original.slice(1);
 }

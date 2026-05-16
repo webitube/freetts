@@ -65,8 +65,7 @@ import {
     loadKokoroVoices, 
     updatePitchWarning
 } from './voice-manager.js';
-import { format } from 'vitest/internal/browser';
-
+import { toggleHidden } from './app-utils.js';
 
 setDebugMode(false);
 debugLog(`app.js: BEGIN...`);
@@ -134,33 +133,18 @@ const kokoroPlayer = new KokoroPlayer('kokoro-chunk-list', (msg) => {
     //---------------------------------------------------------------------------
     // statusCallback - Kokoro-specific status goes to ttsStatus element
     //---------------------------------------------------------------------------
-    //updateStatusMsg(elements.ttsStatus, msg, kokoroPlayer.activeDevice);
-    if (msg.length == 0)
-    {
-        msg = "Ready.";
-    }
-    else
-    {
-        if (kokoroPlayer.status == "ready")
-        {
-            if (ttsController.getIsSpeaking())
-            {
-                msg = "Speaking..."
-            }
-            else
-            {
-                msg = "Ready.";
-            }
-        }
+    if (!msg.length || kokoroPlayer.status === 'ready') {
+        msg = ttsController.getIsSpeaking() ? 'Speaking...' : 'Ready.';
     }
 
-    document.getElementById('tts-status').textContent = msg;
+    const statusEl = document.getElementById('tts-status');
+    if (statusEl) {
+        statusEl.textContent = msg;
+    }
 
     // Show download button when Kokoro TTS is active and has merged audio
     const dlBtn = document.getElementById('download-audio');
-    if (dlBtn) {
-        dlBtn.classList.toggle('hidden', ttsController.getActiveEngine() !== 'kokoro' || !kokoroPlayer.mergedBlob);
-    }
+    toggleHidden(dlBtn, ttsController.getActiveEngine() !== 'kokoro' || !kokoroPlayer.mergedBlob);
 }, (activeDevice) => {
     //---------------------------------------------------------------------------
     // activeDeviceCallback: Update the TTS active-device-msg

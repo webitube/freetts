@@ -1,4 +1,6 @@
 import { cleanMarkdown } from './highlighting-utils.js';
+import { setUIState as setPlaybackUIState } from './ui-manager.js';
+import { resetStatusAfterDelay } from './app-utils.js';
 
 /**
  * TTSController handles Text-to-Speech playback logic for both
@@ -27,7 +29,7 @@ export class TTSController {
         this.speechOffsetStart = 0;
         this.kokoroTextToSpeak = '';
         this.kokoroStartOffset = 0;
-        this.isSpeakingCallback = isSpeakingCallback
+        this.isSpeakingCallback = typeof isSpeakingCallback === 'function' ? isSpeakingCallback : () => {};
         this.isSpeakingCallback(this.isSpeaking);
     }
 
@@ -71,32 +73,21 @@ export class TTSController {
         if (this.editorManager.isCurrentlySourceMode()) {
             const sourceEl = this.elements.source;
             if (document.activeElement !== sourceEl) {
-                sourceEl.focus();
-                sourceEl.setSelectionRange(0, 0);
+                if (typeof sourceEl.focus === 'function') {
+                    sourceEl.focus();
+                }
+                if (typeof sourceEl.setSelectionRange === 'function') {
+                    sourceEl.setSelectionRange(0, 0);
+                }
             }
         }
 
         const selectionText = window.getSelection().toString().trim();
-        let textToSpeak = '';
-        let startOffset = 0;
-
-        if (selectionText) {
-            textToSpeak = selectionText;
-            startOffset = this.editorManager.isCurrentlySourceMode() 
-                ? (this.elements.source.selectionStart || 0) 
-                : this.getVisualCursorInfo(this.elements.visual).offset;
-        } else if (this.editorManager.isCurrentlySourceMode()) {
-            startOffset = this.elements.source.selectionStart || 0;
-            textToSpeak = this.elements.source.value.substring(startOffset);
-        } else {
-            const info = this.getVisualCursorInfo(this.elements.visual);
-            startOffset = info.offset;
-            textToSpeak = info.text.substring(startOffset);
-        }
+        const { textToSpeak, startOffset } = this._getTextAndOffset(selectionText);
 
         if (!textToSpeak.trim()) {
             statusCallback('Please place cursor or select text.');
-            setTimeout(() => statusCallback('Ready.'), 2000);
+            resetStatusAfterDelay(statusCallback);
             return;
         }
 
@@ -158,6 +149,29 @@ export class TTSController {
      * @param {string} textToSpeak - Text to speak
      * @param {number} startOffset - Start offset for highlighting
      */
+    _getTextAndOffset(selectionText) {
+        if (selectionText) {
+            const startOffset = this.editorManager.isCurrentlySourceMode()
+                ? (this.elements.source.selectionStart || 0)
+                : this.getVisualCursorInfo(this.elements.visual).offset;
+            return { textToSpeak: selectionText, startOffset };
+        }
+
+        if (this.editorManager.isCurrentlySourceMode()) {
+            const startOffset = this.elements.source.selectionStart || 0;
+            return {
+                textToSpeak: this.elements.source.value.substring(startOffset),
+                startOffset
+            };
+        }
+
+        const info = this.getVisualCursorInfo(this.elements.visual);
+        return {
+            textToSpeak: info.text.substring(info.offset),
+            startOffset: info.offset
+        };
+    }
+
     speakWithKokoro(textToSpeak, startOffset) {
         this.kokoroTextToSpeak = textToSpeak;
         this.kokoroStartOffset = startOffset;
@@ -178,10 +192,7 @@ export class TTSController {
      * @param {boolean} active - Whether playback is active
      */
     setUIState(active) {
-        this.elements.playIcon.classList.toggle('hidden', active);
-        this.elements.stopIcon.classList.toggle('hidden', !active);
-        this.elements.btnTts.classList.toggle('text-red-600', active);
-        this.elements.btnTts.classList.toggle('text-blue-600', !active);
+        setPlaybackUIState(this.elements, active);
         this.setIsSpeaking(active);
     }
 

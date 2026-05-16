@@ -2,7 +2,7 @@
  * AudioPlayer handles chunk-based audio playback for Kokoro TTS.
  * Each audio chunk is rendered as an independent <audio> element.
  */
-import { debugLog, debugWarn, debugError } from "./debug-log";
+import { debugLog } from "./debug-log";
 
 
 /**
@@ -23,9 +23,6 @@ export class AudioPlayer {
      * @param {HTMLAudioElement} audioEl - The audio element
      */
     registerAudioElement(chunkIndex, audioEl) {
-        audioEl.addEventListener('ended', () => {
-            this.player._onChunkEnded(chunkIndex);
-        });
         this.audioElements[chunkIndex] = audioEl;
     }
 
@@ -38,9 +35,6 @@ export class AudioPlayer {
     createAudioElement(chunkIndex, audioBlob) {
         const url = URL.createObjectURL(audioBlob);
         const audio = new Audio(url);
-        audio.addEventListener('ended', () => {
-            this.player._onChunkEnded(chunkIndex);
-        });
         this.audioElements[chunkIndex] = audio;
         return audio;
     }

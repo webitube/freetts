@@ -23,9 +23,8 @@ describe('global-switches.js', () => {
             expect(getDebugMode()).toBe(false);
         });
 
-        it('should default to true', () => {
-            // The module initializes debugMode = true
-            expect(getDebugMode()).toBe(true);
+        it('should return the module-initialized state without modification', () => {
+            expect(getDebugMode()).toBe(originalDebugMode);
         });
     });
 

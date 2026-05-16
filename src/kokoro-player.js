@@ -10,12 +10,11 @@
  * Refactored into smaller modules:
  * - kokoro-worker-communication.js - Worker management
  * - kokoro-audio-player.js - Audio playback
- * - kokoro-ui-manager.js - DOM manipulation
  * - kokoro-chunk-manager.js - Chunk state logic
+ * - kokoro-chunk-renderer.js - Chunk rendering
  */
 import { WorkerCommunication } from './kokoro-worker-communication.js';
 import { AudioPlayer } from './kokoro-audio-player.js';
-import { UIManager } from './kokoro-ui-manager.js';
 import { ChunkManager } from './kokoro-chunk-manager.js';
 import { ChunkRenderer } from './kokoro-chunk-renderer.js';
 
@@ -62,9 +61,23 @@ export class KokoroPlayer {
         // Initialize sub-modules
         this.workerComm = new WorkerCommunication(this);
         this.audioPlayer = new AudioPlayer(this);
-        this.uiManager = new UIManager(this);
         this.chunkManager = new ChunkManager(this);
         this.chunkRenderer = new ChunkRenderer(this);
+    }
+
+    _getContainer() {
+        return document.getElementById(this.containerId);
+    }
+
+    _getCard(index) {
+        const container = this._getContainer();
+        if (!container) return null;
+        return container.querySelector(`[data-chunk="${index}"]`) || container.querySelector(`[data-index="${index}"]`);
+    }
+
+    _getAudioElement(index) {
+        const container = this._getContainer();
+        return container ? container.querySelector(`audio[data-chunk="${index}"]`) : null;
     }
 
     // ─── Public API ──────────────────────────────────────────────────
@@ -107,7 +120,7 @@ export class KokoroPlayer {
         this.audioPlayer.stopAll();
 
         // Clear playing state from all cards
-        const container = document.getElementById(this.containerId);
+        const container = this._getContainer();
         if (container) {
             container.querySelectorAll('[data-chunk].playing').forEach(card => {
                 card.classList.remove('playing');
@@ -159,7 +172,7 @@ export class KokoroPlayer {
      * @param {number} index - Chunk index
      */
     _appendChunkCard(chunk, index) {
-        const container = document.getElementById(this.containerId);
+        const container = this._getContainer();
         if (!container || !this.isSpeaking)
         {
             this._setStatusState('ready', "Ready.")
@@ -197,9 +210,7 @@ export class KokoroPlayer {
      * @param {number} chunkIndex - Index of the chunk to start from
      */
     _startChunkPlayback(chunkIndex) {
-        const container = document.getElementById(this.containerId);
-        if (!container) return;
-        const audioEl = container.querySelector(`audio[data-chunk="${chunkIndex}"]`);
+        const audioEl = this._getAudioElement(chunkIndex);
         if (!audioEl) return;
         audioEl.currentTime = 0;
 
@@ -244,7 +255,7 @@ export class KokoroPlayer {
      * @param {number} index - Chunk index to scroll to
      */
     _scrollToChunk(index) {
-        const container = document.getElementById(this.containerId);
+        const container = this._getContainer();
         if (!container) return;
 
         const totalChunks = this.chunks.length;
@@ -322,9 +333,7 @@ export class KokoroPlayer {
     // ─── Playback Helpers ────────────────────────────────────────────
 
     _playChunk(index) {
-        const container = document.getElementById(this.containerId);
-        if (!container) return;
-        const audioEl = container.querySelector(`audio[data-chunk="${index}"]`);
+        const audioEl = this._getAudioElement(index);
         if (!audioEl) return;
         audioEl.currentTime = 0;
 
@@ -372,9 +381,7 @@ export class KokoroPlayer {
 
     _handleAutoplayBlocked(audioEl, index) {
         console.warn('Autoplay was blocked. User interaction required.');
-        const container = document.getElementById(this.containerId);
-        if (!container) return;
-        const card = container.querySelector(`[data-chunk="${index}"]`);
+        const card = this._getCard(index);
         if (!card) return;
 
         const indicator = document.createElement('div');
@@ -409,22 +416,19 @@ export class KokoroPlayer {
             this.currentChunkIndex = nextIdx;
             
             if (this.isMobile) {
-                const container = document.getElementById(this.containerId);
-                if (container) {
-                    const nextCard = container.querySelector(`[data-chunk="${nextIdx}"]`);
-                    if (nextCard) {
-                        const existing = nextCard.querySelector('.mobile-play-indicator');
-                        if (existing) existing.remove();
-                        
-                        const indicator = document.createElement('div');
-                        indicator.className = 'mobile-play-indicator text-xs text-blue-600 dark:text-blue-400 mt-2 text-center';
-                        indicator.textContent = '▶ Tap to play';
-                        nextCard.appendChild(indicator);
-                        
-                        setTimeout(() => {
-                            if (indicator.parentNode) indicator.remove();
-                        }, 5000);
-                    }
+                const nextCard = this._getCard(nextIdx);
+                if (nextCard) {
+                    const existing = nextCard.querySelector('.mobile-play-indicator');
+                    if (existing) existing.remove();
+                    
+                    const indicator = document.createElement('div');
+                    indicator.className = 'mobile-play-indicator text-xs text-blue-600 dark:text-blue-400 mt-2 text-center';
+                    indicator.textContent = '▶ Tap to play';
+                    nextCard.appendChild(indicator);
+                    
+                    setTimeout(() => {
+                        if (indicator.parentNode) indicator.remove();
+                    }, 5000);
                 }
             } else {
                 setTimeout(() => this._playChunk(nextIdx), 300);
@@ -469,11 +473,7 @@ export class KokoroPlayer {
     }
 
     _setCardActive(index, active) {
-        const container = document.getElementById(this.containerId);
-        if (!container) return;
-
-        const card = container.querySelector(`[data-index="${index}"]`) || 
-                     container.querySelector(`[data-chunk="${index}"]`);
+        const card = this._getCard(index);
         if (card) {
             card.classList.toggle('active', active);
         }
@@ -485,27 +485,12 @@ export class KokoroPlayer {
      * @param {boolean} playing - Whether the card is currently playing
      */
     _setCardPlaying(index, playing) {
-        //debugLog(`_setCardPlaying(): ${index}, playing=${playing}`);
-        const container = document.getElementById(this.containerId);
-        if (!container)
-        {
-            console.error(`_setCardPlaying(): container not found!`);
+        const card = this._getCard(index);
+        if (!card) {
+            console.error(`_setCardPlaying(): card not found for index=${index}!`);
             return;
         }
-        else
-        {
-            //debugLog(`_setCardPlaying(): index=${index}: playing=${playing}: container=${container}`);
-        }
-
-        const card = container.querySelector(`[data-chunk="${index}"]`);
-        if (card) {
-            //debugLog(`_setCardPlaying(): card=${card}`);
-            card.classList.toggle('playing', playing);
-        }
-        else
-        {
-            console.error(`_setCardPlaying(): card not found!`);
-        }
+        card.classList.toggle('playing', playing);
     }
 
     /**
@@ -514,9 +499,7 @@ export class KokoroPlayer {
      * @returns {boolean}
      */
     _isCardPlaying(index) {
-        const container = document.getElementById(this.containerId);
-        if (!container) return false;
-        const card = container.querySelector(`[data-chunk="${index}"]`);
+        const card = this._getCard(index);
         return card ? card.classList.contains('playing') : false;
     }
 

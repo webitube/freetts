@@ -15,6 +15,19 @@ export function initThemeToggle(themeToggle) {
     }
 }
 
+export function updatePlaybackControls(elements, active) {
+    elements.playIcon.classList.toggle('hidden', active);
+    elements.stopIcon.classList.toggle('hidden', !active);
+    elements.btnTts.classList.toggle('text-red-600', active);
+    elements.btnTts.classList.toggle('text-blue-600', !active);
+}
+
+export function resetStatusAfterDelay(statusCallback, delay = 2000, readyMessage = 'Ready.') {
+    if (typeof statusCallback === 'function') {
+        setTimeout(() => statusCallback(readyMessage), delay);
+    }
+}
+
 /**
  * Initialize help modal functionality
  * @param {Object} elements - DOM elements object
@@ -65,12 +78,8 @@ export function initClipboardAndDownload(elements, statusCallback) {
  * @returns {boolean} Updated speaking state
  */
 export function setUIState(elements, active, isSpeaking) {
-    const newSpeakingState = active;
-    elements.playIcon.classList.toggle('hidden', active);
-    elements.stopIcon.classList.toggle('hidden', !active);
-    elements.btnTts.classList.toggle('text-red-600', active);
-    elements.btnTts.classList.toggle('text-blue-600', !active);
-    return newSpeakingState;
+    updatePlaybackControls(elements, active);
+    return active;
 }
 
 /**

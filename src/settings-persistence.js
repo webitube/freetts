@@ -18,6 +18,8 @@ import {
     debugErrorEnd
 } from './debug-log.js'
 
+import { resetStatusAfterDelay } from './app-utils.js'
+
 /**
  * Default settings values
  * @type {Object}
@@ -157,7 +159,7 @@ export function resetTTSSettings(elements, statusCallback, editorManager = null)
     // Save the defaults back to localStorage so they persist
     saveTTSSettings(elements);
     statusCallback('Settings reset.');
-    setTimeout(() => statusCallback('Ready.'), 2000);
+    resetStatusAfterDelay(statusCallback);
 }
 
 /**
