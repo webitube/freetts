@@ -106,8 +106,9 @@ export class WorkerCommunication {
                 setTimeout(() => this.player.statusCallback('Ready.'), 3000);
                 break;
             case 'stream':
-                this.player.chunks.push(chunk);
-                this.player._appendChunkCard(chunk, this.player.chunks.length - 1);
+                // Use reactive actions for chunk management
+                this.player.audioCardStore.actions.addChunk(chunk);
+                this.player._appendChunkCard(chunk, this.player.audioCardStore.chunks.get().length - 1);
                 this.player.statusCallback(`Generating audio... (${this.player.chunks.length} chunk(s))`);
                 // Start playback from the first chunk if nothing is playing yet
                 if (this.player.status === 'generating' && this.player.currentChunkIndex < 0 && this.player.chunks.length === 1) {
