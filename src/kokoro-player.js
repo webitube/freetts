@@ -17,6 +17,7 @@ import { WorkerCommunication } from './kokoro-worker-communication.js';
 import { AudioPlayer } from './kokoro-audio-player.js';
 import { ChunkManager } from './kokoro-chunk-manager.js';
 import { ChunkRenderer } from './kokoro-chunk-renderer.js';
+import { AudioCardStore } from './audio-card-store.js';
 
 import {
     debugLog,
@@ -43,11 +44,30 @@ export class KokoroPlayer {
         this.scrollCallback = scrollCallback;
         this.onPlayOverCallback = onPlayOverCallback;
 
+        // Initialize reactive store
+        this.audioCardStore = AudioCardStore.getInstance();
+        
+        // Subscribe to reactive values
+        const unsubscribeChunks = this.audioCardStore.chunks.subscribe((newChunks) => {
+            this._syncChunksToUI(newChunks);
+        });
+        
+        const unsubscribeIsSpeaking = this.audioCardStore.isSpeaking.subscribe((isSpeaking) => {
+            this._syncIsSpeakingToUI(isSpeaking);
+        });
+        
+        this._unsubscribeHandlers = {
+            chunks: unsubscribeChunks,
+            isSpeaking: unsubscribeIsSpeaking
+        };
+
         // Player state
         this.chunks = [];            // { text, audio: Blob }
         this.currentChunkIndex = -1;
         this.status = 'ready';       // 'loading' | 'ready' | 'generating' | 'error'
         this.isSpeaking = false;
+        this.mergedBlob = null;
+        this.voices = null;
         this.mergedBlob = null;
         this.voices = null;
         
@@ -133,6 +153,12 @@ export class KokoroPlayer {
         this.status = 'ready';
         this._setUIState(false);
         this.renderChunks();
+
+        // Reset reactive store state
+        this.audioCardStore.setCurrentChunkIndex(-1);
+        this.audioCardStore.setIsSpeaking(false);
+        this.audioCardStore.setChunkPlayingStates(new Map());
+        this.audioCardStore.setCardPlayingStates(new Map());
     }
 
     /** Download the merged audio Blob. */
@@ -150,6 +176,15 @@ export class KokoroPlayer {
     destroy() {
         this.audioPlayer.cleanup();
         this.workerComm.destroy();
+
+        // Unsubscribe from reactive store
+        if (this._unsubscribeHandlers) {
+            this._unsubscribeHandlers.chunks();
+            this._unsubscribeHandlers.isSpeaking();
+            if (this._unsubscribeHandlers.chunkPlaying) {
+                this._unsubscribeHandlers.chunkPlaying.forEach(unsub => unsub());
+            }
+        }
     }
 
     /**
@@ -202,6 +237,20 @@ export class KokoroPlayer {
             //debugLog(`kokoro-player.audioEventCallback(): PLAY: event=${event}: index=${index}, cardIndex=${cardIndex}: card.id=${card.id}`);
         });
         container.appendChild(card);
+
+        // Update store with chunk data
+        this.audioCardStore.addChunk(chunk);
+        
+        // Subscribe to this chunk's playing state
+        const unsubscribeChunkPlaying = this.audioCardStore.getChunkPlaying(index).subscribe((playing) => {
+            this._setCardPlaying(index, playing);
+        });
+        
+        // Add to unsubscribe handlers
+        if (!this._unsubscribeHandlers.chunkPlaying) {
+            this._unsubscribeHandlers.chunkPlaying = new Map();
+        }
+        this._unsubscribeHandlers.chunkPlaying.set(index, unsubscribeChunkPlaying);
     }
 
     /**
@@ -501,6 +550,41 @@ export class KokoroPlayer {
     _isCardPlaying(index) {
         const card = this._getCard(index);
         return card ? card.classList.contains('playing') : false;
+    }
+
+    /**
+     * Sync chunks from store to DOM
+     */
+    _syncChunksToUI(chunks) {
+        const container = this._getContainer();
+        if (!container) return;
+
+        // Clear existing cards
+        container.innerHTML = '';
+
+        // Render all chunks
+        chunks.forEach((chunk, index) => {
+            this._appendChunkCard(chunk, index);
+        });
+
+        // Reset playback state
+        this.currentChunkIndex = -1;
+        this.isSpeaking = false;
+        this.mergedBlob = null;
+        this.audioCardStore.setCurrentChunkIndex(-1);
+        this.audioCardStore.setIsSpeaking(false);
+    }
+
+    /**
+     * Sync speaking state to UI
+     */
+    _syncIsSpeakingToUI(isSpeaking) {
+        if (isSpeaking) {
+            this.status = 'ready';
+            this._setStatusState('ready', 'Ready.');
+        } else {
+            this._setStatusState('ready', 'Ready.');
+        }
     }
 
     _getUIState()
