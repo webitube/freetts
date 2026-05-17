@@ -1,6 +1,7 @@
 /**
  * SettingsPersistence handles localStorage persistence for TTS settings
  * including engine, voice, speed, and pitch configuration.
+ * Integrates with reactive store for automatic UI updates.
  */
 const STORAGE_KEY = 'freetts-settings';
 
@@ -19,6 +20,8 @@ import {
 } from './debug-log.js'
 
 import { resetStatusAfterDelay } from './app-utils.js'
+
+import { AudioCardStore } from './audio-card-store.js'
 
 /**
  * Default settings values
@@ -129,6 +132,18 @@ export function loadTTSSettings(elements) {
             elements.pitchSlider.value = settings.pitch || DEFAULT_SETTINGS.pitch;
             const pitchVal = parseFloat(elements.pitchSlider.value);
             elements.pitchVal.textContent = pitchVal > 0 ? `+${pitchVal.toFixed(1)}` : `${pitchVal.toFixed(1)}`;
+            
+            // Use reactive actions to update status (if store is available)
+            try {
+                const audioCardStore = AudioCardStore.getInstance();
+                if (typeof audioCardStore.setStatus === 'function') {
+                    audioCardStore.setStatus('ready');
+                    audioCardStore.setStatusMessage(`Engine: ${currentEngine}, Voice: ${savedVoice}`);
+                }
+            } catch (e) {
+                // Store not initialized (e.g., in tests) — ignore
+            }
+            
             return { engine: currentEngine, voice: savedVoice };
         }
     } catch (e) {
@@ -140,7 +155,8 @@ export function loadTTSSettings(elements) {
 /**
  * Reset TTS settings to defaults and reload saved settings
  * @param {Object} elements - DOM elements object
- * @param {Function} statusCallback - Callback to update status message
+ * @param {Function} statusCallback - Callback to update status message (kept for backward compatibility)
+ * @param {Object} editorManager - Editor manager reference (kept for backward compatibility)
  */
 export function resetTTSSettings(elements, statusCallback, editorManager = null) {
     // Clear all saved settings from localStorage
@@ -158,8 +174,23 @@ export function resetTTSSettings(elements, statusCallback, editorManager = null)
     }
     // Save the defaults back to localStorage so they persist
     saveTTSSettings(elements);
-    statusCallback('Settings reset.');
-    resetStatusAfterDelay(statusCallback);
+    
+    // Use reactive actions to update status (if store is available)
+    try {
+        const audioCardStore = AudioCardStore.getInstance();
+        if (typeof audioCardStore.setStatus === 'function') {
+            audioCardStore.setStatus('ready');
+            audioCardStore.setStatusMessage('Settings reset.');
+        }
+    } catch (e) {
+        // Store not initialized (e.g., in tests) — ignore
+    }
+    
+    // Keep the old callback for backward compatibility
+    if (typeof statusCallback === 'function') {
+        statusCallback('Settings reset.');
+        resetStatusAfterDelay(statusCallback);
+    }
 }
 
 /**

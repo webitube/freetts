@@ -11,7 +11,10 @@
  * - Voice selection persistence and restoration
  * - Kokoro voice synchronization from worker
  * - Backward compatibility: old index format → new name format
+ * - Reactive integration: all voice changes update the reactive store
  */
+
+import { AudioCardStore } from './audio-card-store.js';
 
 import {
     hasSettings,
@@ -85,6 +88,7 @@ function populateVoiceSelect(elements, voices, savedVoice) {
 /**
  * Load Web Speech voices and populate voice selector.
  * Waits for voiceschanged event if voices are not yet available.
+ * Updates the reactive store with status and voice information.
  * @param {Object} elements - DOM elements object
  * @param {SpeechSynthesis} synth - SpeechSynthesis instance
  * @param {string} [savedVoice] - Previously saved voice name to restore
@@ -96,6 +100,16 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
         if (voices.length > 0) {
             // Voices already loaded — populate immediately
             populateVoiceSelect(elements, voices, savedVoice);
+            // Use reactive actions to update status (if store is available)
+            try {
+                const audioCardStore = AudioCardStore.getInstance();
+                if (typeof audioCardStore.setStatus === 'function') {
+                    audioCardStore.setStatus('ready');
+                    audioCardStore.setStatusMessage(`Voice: ${voices[0].name} (${voices[0].lang})`);
+                }
+            } catch (e) {
+                // Store not initialized — ignore
+            }
             resolve(voices);
         } else {
             // Voices not yet loaded — wait for the voiceschanged event
@@ -106,6 +120,16 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
                 const loadedVoices = synth.getVoices();
                 debugLog(`loadWebSpeechVoices(): voiceschanged fired, loaded ${loadedVoices.length} voices`);
                 populateVoiceSelect(elements, loadedVoices, savedVoice);
+                // Use reactive actions to update status (if store is available)
+                try {
+                    const audioCardStore = AudioCardStore.getInstance();
+                    if (typeof audioCardStore.setStatus === 'function') {
+                        audioCardStore.setStatus('ready');
+                        audioCardStore.setStatusMessage(`Voice: ${loadedVoices[0].name} (${loadedVoices[0].lang})`);
+                    }
+                } catch (e) {
+                    // Store not initialized — ignore
+                }
                 resolve(loadedVoices);
             };
             
@@ -117,6 +141,16 @@ export function loadWebSpeechVoices(elements, synth, savedVoice) {
                 const timeoutVoices = synth.getVoices();
                 debugLog(`loadWebSpeechVoices(): voiceschanged timeout after 5s, loaded ${timeoutVoices.length} voices`);
                 populateVoiceSelect(elements, timeoutVoices, savedVoice);
+                // Use reactive actions to update status (if store is available)
+                try {
+                    const audioCardStore = AudioCardStore.getInstance();
+                    if (typeof audioCardStore.setStatus === 'function') {
+                        audioCardStore.setStatus('ready');
+                        audioCardStore.setStatusMessage(`Voice: ${timeoutVoices[0].name} (${timeoutVoices[0].lang})`);
+                    }
+                } catch (e) {
+                    // Store not initialized — ignore
+                }
                 resolve(timeoutVoices);
             }, 5000);
         }
