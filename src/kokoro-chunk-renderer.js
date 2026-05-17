@@ -3,6 +3,8 @@
  */
 
 import { debugLog } from "./debug-log";
+import { AudioCardStore } from "./audio-card-store.js";
+import { AudioCardActions } from "./audio-card-actions.js";
 
 /**
  * ChunkRenderer manages chunk card DOM creation and manipulation
@@ -13,6 +15,10 @@ export class ChunkRenderer {
      */
     constructor(player) {
         this.player = player;
+        
+        // Initialize reactive store and actions
+        this.audioCardStore = AudioCardStore.getInstance();
+        this.audioCardActions = new AudioCardActions();
     }
 
     _getContainer() {
@@ -100,6 +106,15 @@ export class ChunkRenderer {
 
     audioElementCallback(event, index) {
         debugLog(`kokoro-chunk-renderer.audioElementCallback(): event=${event}: index=${index}`);
+        // Update reactive store for fine-grained UI updates
+        if (event === 'play' || event === 'playing') {
+            this.audioCardActions.setCardPlaying(index, true);
+            this.audioCardActions.setCardActive(index, true);
+        } else if (event === 'pause') {
+            this.audioCardActions.setCardPlaying(index, false);
+        } else if (event === 'ended') {
+            this.audioCardActions.setCardPlaying(index, false);
+        }
     }
 
     /**
@@ -119,13 +134,13 @@ export class ChunkRenderer {
         }`;
         card.setAttribute('data-chunk', index);
 
-        // Click to seek
+        // Click to seek - use reactive actions
         card.onclick = () => {
             const container = this._getContainer();
             this._resetPlaybackState(container);
-            this.player._setCardActive(this.player.currentChunkIndex, false);
+            this.audioCardActions.setCardActive(this.player.currentChunkIndex, false);
             this.player.currentChunkIndex = index;
-            this.player._setCardActive(index, true);
+            this.audioCardActions.setCardActive(index, true);
             this.player._playChunk(index);
         };
 
@@ -151,7 +166,7 @@ export class ChunkRenderer {
      * @param {function(event: string, card index: integer): void} eventCallback - Callback for audio events
      * @returns {HTMLAudioElement}
      */
-    createAudioElement(chunk, index, eventCallback) {
+    createAudioElement(chunk, index, audioElementCallback) {
         const audioEl = document.createElement('audio');
         audioEl.id = `audio-chunk-${index}`;
         audioEl.setAttribute('data-chunk', index);
@@ -167,7 +182,17 @@ export class ChunkRenderer {
         audioEl.muted = true;
         audioEl.className = 'w-full mt-0.5';
 
-        this._bindAudioEventHandlers(audioEl, index, eventCallback);
+        // Use reactive event callback that updates the store
+        this._bindAudioEventHandlers(audioEl, index, (event, cardIndex) => {
+            if (event === 'play' || event === 'playing') {
+                this.audioCardActions.setCardPlaying(cardIndex, true);
+                this.audioCardActions.setCardActive(cardIndex, true);
+            } else if (event === 'pause') {
+                this.audioCardActions.setCardPlaying(cardIndex, false);
+            } else if (event === 'ended') {
+                this.audioCardActions.setCardPlaying(cardIndex, false);
+            }
+        });
 
         return audioEl;
     }
