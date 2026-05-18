@@ -13,6 +13,15 @@ import {
 } from './debug-log.js'
 
 
+import {
+    AudioCardStore
+} from './audio-card-store.js'
+
+import {
+    AudioCardActions
+} from './audio-card-actions.js'
+
+
 
 /**
  * WorkerCommunication manages Web Worker communication for Kokoro TTS
@@ -94,6 +103,8 @@ export class WorkerCommunication {
     _handleWorkerMessage(e) {
         const { status, chunk, mergedAudio, voices, device, data } = e.data;
 
+        const audioCardStore = AudioCardStore.getInstance();
+
         switch (status) {
             case 'device':
                 // Store the active Kokoro backend device
@@ -104,16 +115,16 @@ export class WorkerCommunication {
                 this.workerInitializing = false;
                 this.player.voices = voices;
                 // Use reactive actions for status update
-                this.player.audioCardStore.setStatus('ready');
-                this.player.audioCardStore.setStatusMessage('Ready.');
+                AudioCardActions.setStatus('ready');
+                AudioCardActions.setStatusMessage('Ready.');
                 setTimeout(() => this.player.statusCallback('Ready.'), 3000);
                 break;
             case 'stream':
                 // Use reactive actions for chunk management
-                this.player.audioCardStore.actions.addChunk(chunk);
-                this.player._appendChunkCard(chunk, this.player.audioCardStore.chunks.get().length - 1);
+                AudioCardActions.addChunk(chunk);
+                this.player._appendChunkCard(chunk, audioCardStore.chunks.get().length - 1);
                 // Use reactive actions for status update
-                this.player.audioCardStore.setStatusMessage(`Generating audio... (${this.player.chunks.length} chunk(s))`);
+                AudioCardActions.setStatusMessage(`Generating audio... (${this.player.chunks.length} chunk(s))`);
                 // Start playback from the first chunk if nothing is playing yet
                 if (this.player.status === 'generating' && this.player.currentChunkIndex < 0 && this.player.chunks.length === 1) {
                     this.player.currentChunkIndex = 0;
@@ -130,8 +141,8 @@ export class WorkerCommunication {
                 this.player.status = 'ready';
                 this.player.mergedBlob = mergedAudio;
                 // Use reactive actions for status update
-                this.player.audioCardStore.setStatus('ready');
-                this.player.audioCardStore.setStatusMessage(`Done. ${this.player.chunks.length} chunk(s).`);
+                AudioCardActions.setStatus('ready');
+                AudioCardActions.setStatusMessage(`Done. ${this.player.chunks.length} chunk(s).`);
                 // Reset UI if playback finished / was waiting before complete arrived
                 if (this.player.currentChunkIndex < 0 || this.player.currentChunkIndex >= this.player.chunks.length) {
                     this.player.currentChunkIndex = -1;
@@ -142,8 +153,8 @@ export class WorkerCommunication {
                 this.player._setStatusState('error', "Error");
                 this.player._setError(data);
                 // Use reactive actions for error status
-                this.player.audioCardStore.setStatus('error');
-                this.player.audioCardStore.setStatusMessage('Error: ' + data);
+                AudioCardActions.setStatus('error');
+                AudioCardActions.setStatusMessage('Error: ' + data);
                 break;
         }
     }

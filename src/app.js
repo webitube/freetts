@@ -67,7 +67,12 @@ import {
 } from './voice-manager.js';
 import { toggleHidden } from './app-utils.js';
 
-setDebugMode(false);
+import {
+    AudioCardStore
+} from './audio-card-store.js';
+
+
+setDebugMode(true);
 debugLog(`app.js: BEGIN...`);
 
 /**
@@ -387,4 +392,9 @@ document.getElementById('download-audio').onclick = () => {
 });
 
 updateSelectedEngine();
+
+AudioCardStore.getInstance().setsta
+const statusMessage = AudioCardStore.getStatusMessage();
+debugLog(`statusMessage=${statusMessage}`);
+
 debugLog(`app.js: END.`);

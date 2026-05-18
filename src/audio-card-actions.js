@@ -14,10 +14,10 @@ export class AudioCardActions {
      * Add a new audio chunk
      * @param {object} chunk - { text: string, audio: Blob }
      */
-    addChunk(chunk) {
-        const chunks = this.store.register('chunks', []);
-        const newChunks = [...chunks.get(), chunk];
-        chunks.set(newChunks);
+    static addChunk(chunk) {
+        //const chunks = this.store.register('chunks', []);
+        //const newChunks = [...chunks.get(), chunk];
+        //chunks.set(newChunks);
     }
 
     /**
@@ -25,38 +25,38 @@ export class AudioCardActions {
      * @param {number} index - Chunk index
      * @param {object} chunk - { text: string, audio: Blob }
      */
-    updateChunk(index, chunk) {
-        const chunks = this.store.register('chunks', []);
-        const currentChunks = chunks.get();
-        if (index >= 0 && index < currentChunks.length) {
-            const newChunks = [...currentChunks];
-            newChunks[index] = chunk;
-            chunks.set(newChunks);
-        }
+    static updateChunk(index, chunk) {
+        //const chunks = this.store.register('chunks', []);
+        //const currentChunks = chunks.get();
+        //if (index >= 0 && index < currentChunks.length) {
+        //    const newChunks = [...currentChunks];
+        //    newChunks[index] = chunk;
+        //    chunks.set(newChunks);
+        //}
     }
 
     /**
      * Remove a chunk by index
      * @param {number} index - Chunk index to remove
      */
-    removeChunk(index) {
-        const chunks = this.store.register('chunks', []);
-        const currentChunks = chunks.get();
-        if (index >= 0 && index < currentChunks.length) {
-            const newChunks = currentChunks.filter((_, i) => i !== index);
-            chunks.set(newChunks);
-            // Clean up associated state
-            this._cleanupChunkState(index);
-        }
+    static removeChunk(index) {
+        //const chunks = this.store.register('chunks', []);
+        //const currentChunks = chunks.get();
+        //if (index >= 0 && index < currentChunks.length) {
+        //    const newChunks = currentChunks.filter((_, i) => i !== index);
+        //    chunks.set(newChunks);
+        //    // Clean up associated state
+        //    this._cleanupChunkState(index);
+        //}
     }
 
     /**
      * Clear all chunks
      */
-    clearChunks() {
-        this.store.register('chunks', []).set([]);
-        // Clean up all associated state
-        this._cleanupAllState();
+    static clearChunks() {
+        //this.store.register('chunks', []).set([]);
+        //// Clean up all associated state
+        //this._cleanupAllState();
     }
 
     /**
@@ -64,21 +64,22 @@ export class AudioCardActions {
      * @param {number} index - Chunk index
      * @returns {object|null}
      */
-    getChunk(index) {
-        const chunks = this.store.register('chunks', []);
-        const currentChunks = chunks.get();
-        return index >= 0 && index < currentChunks.length
-            ? currentChunks[index]
-            : null;
+    static getChunk(index) {
+        //const chunks = this.store.register('chunks', []);
+        //const currentChunks = chunks.get();
+        //return index >= 0 && index < currentChunks.length
+        //    ? currentChunks[index]
+        //    : null;
+        return null;
     }
 
     /**
      * Get all chunks
      * @returns {Array}
      */
-    getAllChunks() {
-        const chunks = this.store.register('chunks', []);
-        return chunks.get();
+    static getAllChunks() {
+        //const chunks = this.store.register('chunks', []);
+        //return chunks.get();
     }
 
     // ─── Playback State Actions ───────────────────────────────────────────
@@ -87,7 +88,7 @@ export class AudioCardActions {
      * Set current playing chunk index
      * @param {number} index - New current chunk index
      */
-    setCurrentChunkIndex(index) {
+    static setCurrentChunkIndex(index) {
         this.store.register('currentChunkIndex', -1).set(index);
     }
 
@@ -95,7 +96,7 @@ export class AudioCardActions {
      * Set speaking state
      * @param {boolean} isSpeaking - Whether TTS is actively speaking
      */
-    setIsSpeaking(isSpeaking) {
+    static setIsSpeaking(isSpeaking) {
         this.store.register('isSpeaking', false).set(isSpeaking);
     }
 
@@ -104,7 +105,7 @@ export class AudioCardActions {
      * @param {number} index - Chunk index
      * @param {boolean} playing - Whether this chunk is currently playing
      */
-    setChunkPlaying(index, playing) {
+    static setChunkPlaying(index, playing) {
         const chunkPlayingStates = this.store.register('chunkPlayingStates', new Map());
         const newStates = new Map(chunkPlayingStates.get());
         newStates.set(index, playing);
@@ -116,7 +117,7 @@ export class AudioCardActions {
      * Set all chunk playing states
      * @param {Map<number, boolean>} states - Map of index -> playing state
      */
-    setChunkPlayingStates(states) {
+    static setChunkPlayingStates(states) {
         this.store.register('chunkPlayingStates', new Map()).set(new Map(states));
     }
 
@@ -125,7 +126,7 @@ export class AudioCardActions {
      * @param {number} index - Chunk index
      * @param {boolean} active - Whether this card is the active one
      */
-    setCardActive(index, active) {
+    static setCardActive(index, active) {
         this.store.register(`cardActive-${index}`, false).set(active);
         // Also update the global map for consistency
         const cardActiveStates = this.store.register('cardActiveStates', new Map());
@@ -138,7 +139,7 @@ export class AudioCardActions {
      * Set all card active states
      * @param {Map<number, boolean>} states - Map of index -> active state
      */
-    setCardActiveStates(states) {
+    static setCardActiveStates(states) {
         this.store.register('cardActiveStates', new Map()).set(new Map(states));
     }
 
@@ -147,7 +148,7 @@ export class AudioCardActions {
      * @param {number} index - Chunk index
      * @param {boolean} playing - Whether this card is currently playing
      */
-    setCardPlaying(index, playing) {
+    static setCardPlaying(index, playing) {
         this.store.register(`cardPlaying-${index}`, false).set(playing);
         const cardPlayingStates = this.store.register('cardPlayingStates', new Map());
         const newStates = new Map(cardPlayingStates.get());
@@ -160,7 +161,7 @@ export class AudioCardActions {
      * @param {number} index - Chunk index
      * @returns {ReactiveValue<boolean>}
      */
-    getCardPlaying(index) {
+    static getCardPlaying(index) {
         return this.store.register(`cardPlaying-${index}`, false);
     }
 
@@ -169,7 +170,7 @@ export class AudioCardActions {
      * @param {number} index - Chunk index
      * @returns {ReactiveValue<boolean>}
      */
-    getCardActive(index) {
+    static getCardActive(index) {
         return this.store.register(`cardActive-${index}`, false);
     }
 
@@ -178,7 +179,7 @@ export class AudioCardActions {
      * @param {number} index - Chunk index
      * @returns {ReactiveValue<boolean>}
      */
-    getChunkPlaying(index) {
+    static getChunkPlaying(index) {
         const chunkPlayingStates = this.store.register('chunkPlayingStates', new Map());
         return this.store.register(`chunkPlaying-${index}`, false);
     }
@@ -187,7 +188,7 @@ export class AudioCardActions {
      * Get current chunk index
      * @returns {ReactiveValue<number>}
      */
-    getCurrentChunkIndex() {
+    static getCurrentChunkIndex() {
         return this.store.register('currentChunkIndex', -1);
     }
 
@@ -195,7 +196,7 @@ export class AudioCardActions {
      * Get isSpeaking state
      * @returns {ReactiveValue<boolean>}
      */
-    getIsSpeaking() {
+    static getIsSpeaking() {
         return this.store.register('isSpeaking', false);
     }
 
@@ -203,7 +204,7 @@ export class AudioCardActions {
      * Get chunk playing states for all chunks
      * @returns {ReactiveValue<Map<number, boolean>>}
      */
-    getChunkPlayingStates() {
+    static getChunkPlayingStates() {
         return this.store.register('chunkPlayingStates', new Map());
     }
 
@@ -211,7 +212,7 @@ export class AudioCardActions {
      * Get card active states for all chunks
      * @returns {ReactiveValue<Map<number, boolean>>}
      */
-    getCardActiveStates() {
+    static getCardActiveStates() {
         return this.store.register('cardActiveStates', new Map());
     }
 
@@ -219,7 +220,7 @@ export class AudioCardActions {
      * Get card playing states for all chunks
      * @returns {ReactiveValue<Map<number, boolean>>}
      */
-    getCardPlayingStates() {
+    static getCardPlayingStates() {
         return this.store.register('cardPlayingStates', new Map());
     }
 
@@ -227,47 +228,13 @@ export class AudioCardActions {
      * Set all card playing states
      * @param {Map<number, boolean>} states - Map of index -> playing state
      */
-    setCardPlayingStates(states) {
+    static setCardPlayingStates(states) {
         this.store.register('cardPlayingStates', new Map()).set(new Map(states));
-    }
-
-    // ─── Status Actions ───────────────────────────────────────────────────
-
-    /**
-     * Set status message
-     * @param {string} message - Status message to display
-     */
-    setStatusMessage(message) {
-        this.store.register('statusMessage', '').set(message);
-    }
-
-    /**
-     * Set playback status
-     * @param {string} status - 'ready' | 'loading' | 'generating' | 'error'
-     */
-    setStatus(status) {
-        this.store.register('status', 'ready').set(status);
-    }
-
-    /**
-     * Get status message
-     * @returns {ReactiveValue<string>}
-     */
-    getStatusMessage() {
-        return this.store.register('statusMessage', '');
-    }
-
-    /**
-     * Get playback status
-     * @returns {ReactiveValue<string>}
-     */
-    getStatus() {
-        return this.store.register('status', 'ready');
     }
 
     // ─── Internal Cleanup ─────────────────────────────────────────────────
 
-    _cleanupChunkState(index) {
+    static _cleanupChunkState(index) {
         // Remove playing states for removed chunk
         const chunkPlayingStates = this.store.register('chunkPlayingStates', new Map());
         const chunkStates = new Map(chunkPlayingStates.get());
@@ -288,7 +255,7 @@ export class AudioCardActions {
         this.store.register(`cardActive-${index}`, false).set(false);
     }
 
-    _cleanupAllState() {
+    static _cleanupAllState() {
         this.store.register('chunkPlayingStates', new Map()).set(new Map());
         this.store.register('cardPlayingStates', new Map()).set(new Map());
         this.store.register('cardActiveStates', new Map()).set(new Map());

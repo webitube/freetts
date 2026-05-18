@@ -226,7 +226,7 @@ describe('Global Integration: Reactive Architecture', () => {
 
             // Simulate worker becoming ready
             player.workerComm.workerReady = true;
-            player.workerComm._handleWorkerMessage({ data: { chunks: [{ text: 'Recovered', audio: mockBlob }] } });
+            player.workerComm._handleWorkerMessage({ data: { status: 'ready', voices: [] } });
             player.status = 'ready';
 
             // Should recover gracefully

@@ -2,10 +2,10 @@
  * AudioCardStore — Reactive data store for audio card chunks and playback state
  */
 import { ReactiveStore } from './reactive-store.js';
-import { AudioCardActions } from './audio-card-actions.js';
 
-export class AudioCardStore extends AudioCardActions {
+export class AudioCardStore extends ReactiveStore {
     static instance = null;
+    static chunks = [];
     #store;
 
     constructor() {
@@ -17,10 +17,10 @@ export class AudioCardStore extends AudioCardActions {
         AudioCardStore.instance = this;
         this.#store = store;
 
-        // Initialize derived reactive values
-        this.chunks.subscribe(chunks => {
-            this.chunkCount.set(chunks.length);
-        });
+        //// Initialize derived reactive values
+        //this.chunks.subscribe(chunks => {
+        //    this.chunkCount.set(chunks.length);
+        //});
     }
 
     /**
@@ -45,7 +45,7 @@ export class AudioCardStore extends AudioCardActions {
      * @returns {ReactiveStore}
      */
     getStore() {
-        return this.#store;
+        return AudioCardStore.getInstance().#store;
     }
 
     // ─── Reactive Values ─────────────────────────────────────────────────
@@ -54,24 +54,24 @@ export class AudioCardStore extends AudioCardActions {
      * Get all audio chunks
      * @returns {ReactiveValue<Array>}
      */
-    get chunks() {
-        return this.#store.register('chunks', []);
+    static getChunks() {
+        return AudioCardStore.getInstance().#store.register('chunks', []);
     }
 
     /**
      * Get current playing chunk index
      * @returns {ReactiveValue<number>}
      */
-    getCurrentChunkIndex() {
-        return this.#store.register('currentChunkIndex', -1);
+    static getCurrentChunkIndex() {
+        return AudioCardStore.getInstance().#store.register('currentChunkIndex', -1);
     }
 
     /**
      * Get isSpeaking state
      * @returns {ReactiveValue<boolean>}
      */
-    get isSpeaking() {
-        return this.#store.register('isSpeaking', false);
+    static getIsSpeaking() {
+        return AudioCardStore.getInstance().#store.register('isSpeaking', false);
     }
 
     /**
@@ -79,16 +79,16 @@ export class AudioCardStore extends AudioCardActions {
      * @param {number} index - Chunk index
      * @returns {ReactiveValue<boolean>}
      */
-    getChunkPlaying(index) {
-        return this.#store.register(`chunkPlaying-${index}`, false);
+    static getChunkPlaying(index) {
+        return AudioCardStore.getInstance().#store.register(`chunkPlaying-${index}`, false);
     }
 
     /**
      * Get chunk playing state for all chunks
      * @returns {ReactiveValue<Map<number, boolean>>}
      */
-    get chunkPlayingStates() {
-        return this.#store.register('chunkPlayingStates', new Map());
+    static getChunkPlayingStates() {
+        return AudioCardStore.getInstance().#store.register('chunkPlayingStates', new Map());
     }
 
     /**
@@ -96,16 +96,16 @@ export class AudioCardStore extends AudioCardActions {
      * @param {number} index - Chunk index
      * @returns {ReactiveValue<boolean>}
      */
-    getCardActive(index) {
-        return this.#store.register(`cardActive-${index}`, false);
+    static getCardActive(index) {
+        return AudioCardStore.getInstance().#store.register(`cardActive-${index}`, false);
     }
 
     /**
      * Get card active states for all chunks
      * @returns {ReactiveValue<Map<number, boolean>>}
      */
-    get cardActiveStates() {
-        return this.#store.register('cardActiveStates', new Map());
+    static getCardActiveStates() {
+        return AudioCardStore.getInstance().#store.register('cardActiveStates', new Map());
     }
 
     /**
@@ -113,39 +113,59 @@ export class AudioCardStore extends AudioCardActions {
      * @param {number} index - Chunk index
      * @returns {ReactiveValue<boolean>}
      */
-    getCardPlaying(index) {
-        return this.#store.register(`cardPlaying-${index}`, false);
+    static getCardPlaying(index) {
+        return AudioCardStore.getInstance().#store.register(`cardPlaying-${index}`, false);
     }
 
     /**
      * Get card playing states for all chunks
      * @returns {ReactiveValue<Map<number, boolean>>}
      */
-    get cardPlayingStates() {
-        return this.#store.register('cardPlayingStates', new Map());
+    static getCardPlayingStates() {
+        return AudioCardStore.getInstance().#store.register('cardPlayingStates', new Map());
     }
 
+    // ─── Status Message ───────────────────────────────────────────────────
     /**
      * Get playback status message
      * @returns {ReactiveValue<string>}
      */
-    getStatusMessage() {
-        return this.#store.register('statusMessage', '');
+    static getStatusMessage() {
+        return AudioCardStore.getInstance().#store.register('statusMessage', '');
     }
 
+    /**
+     * Set status message
+     * @param {string} message - Status message to display
+     */
+    static setStatusMessage(message) {
+        AudioCardStore.getInstance().store.register('statusMessage', '').set(message);
+    }
+
+    // ─── Status ───────────────────────────────────────────────────
     /**
      * Get playback status
      * @returns {ReactiveValue<string>}
      */
-    getStatus() {
-        return this.#store.register('status', 'ready');
+    static getStatus() {
+        return AudioCardStore.getInstance().#store.register('status', 'ready');
     }
+
+    /**
+     * Set playback status
+     * @param {string} status - 'ready' | 'loading' | 'generating' | 'error'
+     */
+    static setStatus(status) {
+        AudioCardStore.getInstance().store.register('status', 'ready').set(status);
+    }
+
+    // ─── Chunk ───────────────────────────────────────────────────
 
     /**
      * Get total chunk count (derived from chunks array)
      * @returns {ReactiveValue<number>}
      */
-    get chunkCount() {
-        return this.#store.register('chunkCount', 0);
+    static getChunkCount() {
+        return AudioCardStore.getInstance().#store.register('chunkCount', 0);
     }
 }
