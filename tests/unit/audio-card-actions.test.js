@@ -311,9 +311,7 @@ describe('AudioCardActions', () => {
             actions.setCardActive(0, false);
             expect(actions.getCardActive(0).get()).toBe(false);
         });
-    });
 
-    describe('setCardActiveStates', () => {
         it('should set all card active states', () => {
             const states = new Map([[0, true], [1, false]]);
             actions.setCardActiveStates(states);
@@ -323,7 +321,7 @@ describe('AudioCardActions', () => {
         });
 
         it('should notify subscribers when states change', () => {
-            const cardActiveStates = store.get('cardActiveStates');
+            const cardActiveStates = actions.getCardActiveStates();
             const callback = vi.fn();
             cardActiveStates.subscribe(callback);
             const states = new Map([[0, true]]);
@@ -340,7 +338,7 @@ describe('AudioCardActions', () => {
 
         it('should update the cardPlayingStates map', () => {
             actions.setCardPlaying(0, true);
-            const states = store.get('cardPlayingStates');
+            const states = actions.getCardPlayingStates();
             expect(states.get().get(0)).toBe(true);
         });
 
@@ -361,7 +359,7 @@ describe('AudioCardActions', () => {
         });
 
         it('should notify subscribers when states change', () => {
-            const cardPlayingStates = store.get('cardPlayingStates');
+            const cardPlayingStates = actions.getCardPlayingStates();
             const callback = vi.fn();
             cardPlayingStates.subscribe(callback);
             const states = new Map([[0, true]]);
@@ -377,7 +375,7 @@ describe('AudioCardActions', () => {
         });
 
         it('should notify subscribers when status message changes', () => {
-            const statusMessage = store.get('statusMessage');
+            const statusMessage = actions.getStatusMessage();
             const callback = vi.fn();
             statusMessage.subscribe(callback);
             actions.setStatusMessage('loading');
@@ -392,7 +390,7 @@ describe('AudioCardActions', () => {
         });
 
         it('should notify subscribers when status changes', () => {
-            const status = store.get('status');
+            const status = actions.getStatus();
             const callback = vi.fn();
             status.subscribe(callback);
             actions.setStatus('loading');
