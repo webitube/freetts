@@ -5,7 +5,7 @@ export class ReactiveValue {
     #value;
     #subscribers = new Set();
 
-    constructor(initialValue = null) {
+    constructor(initialValue = undefined) {
         this.#value = initialValue;
     }
 

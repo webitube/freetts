@@ -37,7 +37,10 @@
       "mcp__Duck-duck-go-search__fetch_content",
       "mcp__Brave-search__brave_web_search",
       "mcp__Filesystem_3__modify_file",
-      "mcp__Git__git_diff"
+      "mcp__Git__git_diff",
+      "Bash(npm run *)",
+      "Skill(using-superpowers)",
+      "Bash(npm test *)"
     ]
   }
 }

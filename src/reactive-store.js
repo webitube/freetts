@@ -1,6 +1,8 @@
 /**
  * ReactiveStore — Singleton data registry with observable values
  */
+import { ReactiveValue } from './reactive-value.js';
+
 export class ReactiveStore {
     static instance = null;
     #registry = new Map();
@@ -28,7 +30,7 @@ export class ReactiveStore {
     /**
      * Get a ReactiveValue by key
      * @param {string} key - Unique identifier
-     * @returns {ReactiveValue|null}
+     * @returns {ReactiveValue|undefined}
      */
     get(key) {
         return this.#registry.get(key);

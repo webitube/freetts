@@ -2,22 +2,35 @@
  * AudioCardStore — Reactive data store for audio card chunks and playback state
  */
 import { ReactiveStore } from './reactive-store.js';
+import { AudioCardActions } from './audio-card-actions.js';
 
-export class AudioCardStore {
+export class AudioCardStore extends AudioCardActions {
+    static instance = null;
     #store;
 
     constructor() {
-        this.#store = new ReactiveStore();
+        const store = new ReactiveStore();
+        super(store);
+        if (AudioCardStore.instance) {
+            return AudioCardStore.instance;
+        }
+        AudioCardStore.instance = this;
+        this.#store = store;
+
+        // Initialize derived reactive values
+        this.chunks.subscribe(chunks => {
+            this.chunkCount.set(chunks.length);
+        });
     }
 
     // ─── Public API ──────────────────────────────────────────────────────
 
     /**
      * Get the singleton store instance
-     * @returns {ReactiveStore}
+     * @returns {AudioCardStore}
      */
     static getInstance() {
-        return new AudioCardStore().getStore();
+        return new AudioCardStore();
     }
 
     /**
@@ -126,8 +139,6 @@ export class AudioCardStore {
      * @returns {ReactiveValue<number>}
      */
     get chunkCount() {
-        return this.chunks.subscribe((chunks) => {
-            this.#store.register('chunkCount', chunks.length);
-        });
+        return this.#store.register('chunkCount', 0);
     }
 }

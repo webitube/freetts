@@ -10,6 +10,7 @@
         "/^npx --version$/": {
             "approve": true,
             "matchCommandLine": true
-        }
+        },
+        "Get-Item": true
     }
 }

@@ -15,10 +15,7 @@ export class AudioCardActions {
      * @param {object} chunk - { text: string, audio: Blob }
      */
     addChunk(chunk) {
-        const chunks = this.store.get('chunks');
-        if (!chunks) {
-            chunks.set([]);
-        }
+        const chunks = this.store.register('chunks', []);
         const newChunks = [...chunks.get(), chunk];
         chunks.set(newChunks);
     }
@@ -29,8 +26,7 @@ export class AudioCardActions {
      * @param {object} chunk - { text: string, audio: Blob }
      */
     updateChunk(index, chunk) {
-        const chunks = this.store.get('chunks');
-        if (!chunks) return;
+        const chunks = this.store.register('chunks', []);
         const currentChunks = chunks.get();
         if (index >= 0 && index < currentChunks.length) {
             const newChunks = [...currentChunks];
@@ -44,8 +40,7 @@ export class AudioCardActions {
      * @param {number} index - Chunk index to remove
      */
     removeChunk(index) {
-        const chunks = this.store.get('chunks');
-        if (!chunks) return;
+        const chunks = this.store.register('chunks', []);
         const currentChunks = chunks.get();
         if (index >= 0 && index < currentChunks.length) {
             const newChunks = currentChunks.filter((_, i) => i !== index);
@@ -59,7 +54,7 @@ export class AudioCardActions {
      * Clear all chunks
      */
     clearChunks() {
-        this.store.get('chunks').set([]);
+        this.store.register('chunks', []).set([]);
         // Clean up all associated state
         this._cleanupAllState();
     }
@@ -70,11 +65,10 @@ export class AudioCardActions {
      * @returns {object|null}
      */
     getChunk(index) {
-        const chunks = this.store.get('chunks');
-        if (!chunks) return null;
+        const chunks = this.store.register('chunks', []);
         const currentChunks = chunks.get();
-        return index >= 0 && index < currentChunks.length 
-            ? currentChunks[index] 
+        return index >= 0 && index < currentChunks.length
+            ? currentChunks[index]
             : null;
     }
 
@@ -83,8 +77,8 @@ export class AudioCardActions {
      * @returns {Array}
      */
     getAllChunks() {
-        const chunks = this.store.get('chunks');
-        return chunks ? chunks.get() : [];
+        const chunks = this.store.register('chunks', []);
+        return chunks.get();
     }
 
     // ─── Playback State Actions ───────────────────────────────────────────
@@ -94,7 +88,7 @@ export class AudioCardActions {
      * @param {number} index - New current chunk index
      */
     setCurrentChunkIndex(index) {
-        this.store.get('currentChunkIndex').set(index);
+        this.store.register('currentChunkIndex', -1).set(index);
     }
 
     /**
@@ -102,7 +96,7 @@ export class AudioCardActions {
      * @param {boolean} isSpeaking - Whether TTS is actively speaking
      */
     setIsSpeaking(isSpeaking) {
-        this.store.get('isSpeaking').set(isSpeaking);
+        this.store.register('isSpeaking', false).set(isSpeaking);
     }
 
     /**
@@ -111,11 +105,11 @@ export class AudioCardActions {
      * @param {boolean} playing - Whether this chunk is currently playing
      */
     setChunkPlaying(index, playing) {
-        const chunkPlayingStates = this.store.get('chunkPlayingStates');
-        if (!chunkPlayingStates) {
-            chunkPlayingStates.set(new Map());
-        }
-        chunkPlayingStates.get().set(index, playing);
+        const chunkPlayingStates = this.store.register('chunkPlayingStates', new Map());
+        const newStates = new Map(chunkPlayingStates.get());
+        newStates.set(index, playing);
+        chunkPlayingStates.set(newStates);
+        this.store.register(`chunkPlaying-${index}`, false).set(playing);
     }
 
     /**
@@ -123,7 +117,7 @@ export class AudioCardActions {
      * @param {Map<number, boolean>} states - Map of index -> playing state
      */
     setChunkPlayingStates(states) {
-        this.store.get('chunkPlayingStates').set(new Map(states));
+        this.store.register('chunkPlayingStates', new Map()).set(new Map(states));
     }
 
     /**
@@ -132,13 +126,12 @@ export class AudioCardActions {
      * @param {boolean} active - Whether this card is the active one
      */
     setCardActive(index, active) {
-        this.store.get(`cardActive-${index}`).set(active);
+        this.store.register(`cardActive-${index}`, false).set(active);
         // Also update the global map for consistency
-        const cardActiveStates = this.store.get('cardActiveStates');
-        if (!cardActiveStates) {
-            cardActiveStates.set(new Map());
-        }
-        cardActiveStates.get().set(index, active);
+        const cardActiveStates = this.store.register('cardActiveStates', new Map());
+        const newStates = new Map(cardActiveStates.get());
+        newStates.set(index, active);
+        cardActiveStates.set(newStates);
     }
 
     /**
@@ -146,7 +139,7 @@ export class AudioCardActions {
      * @param {Map<number, boolean>} states - Map of index -> active state
      */
     setCardActiveStates(states) {
-        this.store.get('cardActiveStates').set(new Map(states));
+        this.store.register('cardActiveStates', new Map()).set(new Map(states));
     }
 
     /**
@@ -155,12 +148,79 @@ export class AudioCardActions {
      * @param {boolean} playing - Whether this card is currently playing
      */
     setCardPlaying(index, playing) {
-        this.store.get(`cardPlaying-${index}`).set(playing);
-        const cardPlayingStates = this.store.get('cardPlayingStates');
-        if (!cardPlayingStates) {
-            cardPlayingStates.set(new Map());
-        }
-        cardPlayingStates.get().set(index, playing);
+        this.store.register(`cardPlaying-${index}`, false).set(playing);
+        const cardPlayingStates = this.store.register('cardPlayingStates', new Map());
+        const newStates = new Map(cardPlayingStates.get());
+        newStates.set(index, playing);
+        cardPlayingStates.set(newStates);
+    }
+
+    /**
+     * Get a single card's playing state (visual indicator)
+     * @param {number} index - Chunk index
+     * @returns {ReactiveValue<boolean>}
+     */
+    getCardPlaying(index) {
+        return this.store.register(`cardPlaying-${index}`, false);
+    }
+
+    /**
+     * Get a single card's active state (visual highlight)
+     * @param {number} index - Chunk index
+     * @returns {ReactiveValue<boolean>}
+     */
+    getCardActive(index) {
+        return this.store.register(`cardActive-${index}`, false);
+    }
+
+    /**
+     * Get a single chunk's playing state
+     * @param {number} index - Chunk index
+     * @returns {ReactiveValue<boolean>}
+     */
+    getChunkPlaying(index) {
+        const chunkPlayingStates = this.store.register('chunkPlayingStates', new Map());
+        return this.store.register(`chunkPlaying-${index}`, false);
+    }
+
+    /**
+     * Get current chunk index
+     * @returns {ReactiveValue<number>}
+     */
+    getCurrentChunkIndex() {
+        return this.store.register('currentChunkIndex', -1);
+    }
+
+    /**
+     * Get isSpeaking state
+     * @returns {ReactiveValue<boolean>}
+     */
+    getIsSpeaking() {
+        return this.store.register('isSpeaking', false);
+    }
+
+    /**
+     * Get chunk playing states for all chunks
+     * @returns {ReactiveValue<Map<number, boolean>>}
+     */
+    getChunkPlayingStates() {
+        return this.store.register('chunkPlayingStates', new Map());
+    }
+
+    /**
+     * Get card active states for all chunks
+     * @returns {ReactiveValue<Map<number, boolean>>}
+     */
+    getCardActiveStates() {
+        return this.store.register('cardActiveStates', new Map());
+    }
+
+    /**
+     * Get card playing states for all chunks
+     * @returns {ReactiveValue<Map<number, boolean>>}
+     */
+    getCardPlayingStates() {
+        return this.store.register('cardPlayingStates', new Map());
     }
 
     /**
@@ -168,7 +228,7 @@ export class AudioCardActions {
      * @param {Map<number, boolean>} states - Map of index -> playing state
      */
     setCardPlayingStates(states) {
-        this.store.get('cardPlayingStates').set(new Map(states));
+        this.store.register('cardPlayingStates', new Map()).set(new Map(states));
     }
 
     // ─── Status Actions ───────────────────────────────────────────────────
@@ -178,7 +238,7 @@ export class AudioCardActions {
      * @param {string} message - Status message to display
      */
     setStatusMessage(message) {
-        this.store.get('statusMessage').set(message);
+        this.store.register('statusMessage', '').set(message);
     }
 
     /**
@@ -186,36 +246,51 @@ export class AudioCardActions {
      * @param {string} status - 'ready' | 'loading' | 'generating' | 'error'
      */
     setStatus(status) {
-        this.store.get('status').set(status);
+        this.store.register('status', 'ready').set(status);
+    }
+
+    /**
+     * Get status message
+     * @returns {ReactiveValue<string>}
+     */
+    getStatusMessage() {
+        return this.store.register('statusMessage', '');
+    }
+
+    /**
+     * Get playback status
+     * @returns {ReactiveValue<string>}
+     */
+    getStatus() {
+        return this.store.register('status', 'ready');
     }
 
     // ─── Internal Cleanup ─────────────────────────────────────────────────
 
     _cleanupChunkState(index) {
         // Remove playing states for removed chunk
-        const chunkPlayingStates = this.store.get('chunkPlayingStates');
-        if (chunkPlayingStates) {
-            const states = chunkPlayingStates.get();
-            states.delete(index);
-            chunkPlayingStates.set(new Map(states));
-        }
-        const cardPlayingStates = this.store.get('cardPlayingStates');
-        if (cardPlayingStates) {
-            const states = cardPlayingStates.get();
-            states.delete(index);
-            cardPlayingStates.set(new Map(states));
-        }
-        const cardActiveStates = this.store.get('cardActiveStates');
-        if (cardActiveStates) {
-            const states = cardActiveStates.get();
-            states.delete(index);
-            cardActiveStates.set(new Map(states));
-        }
+        const chunkPlayingStates = this.store.register('chunkPlayingStates', new Map());
+        const chunkStates = new Map(chunkPlayingStates.get());
+        chunkStates.delete(index);
+        chunkPlayingStates.set(chunkStates);
+        this.store.register(`chunkPlaying-${index}`, false).set(false);
+
+        const cardPlayingStates = this.store.register('cardPlayingStates', new Map());
+        const cardPlayingStatesMap = new Map(cardPlayingStates.get());
+        cardPlayingStatesMap.delete(index);
+        cardPlayingStates.set(cardPlayingStatesMap);
+        this.store.register(`cardPlaying-${index}`, false).set(false);
+
+        const cardActiveStates = this.store.register('cardActiveStates', new Map());
+        const cardActiveStatesMap = new Map(cardActiveStates.get());
+        cardActiveStatesMap.delete(index);
+        cardActiveStates.set(cardActiveStatesMap);
+        this.store.register(`cardActive-${index}`, false).set(false);
     }
 
     _cleanupAllState() {
-        this.store.get('chunkPlayingStates').set(new Map());
-        this.store.get('cardPlayingStates').set(new Map());
-        this.store.get('cardActiveStates').set(new Map());
+        this.store.register('chunkPlayingStates', new Map()).set(new Map());
+        this.store.register('cardPlayingStates', new Map()).set(new Map());
+        this.store.register('cardActiveStates', new Map()).set(new Map());
     }
 }
