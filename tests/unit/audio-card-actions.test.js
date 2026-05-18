@@ -244,7 +244,7 @@ describe('AudioCardActions', () => {
     describe('setIsSpeaking', () => {
         it('should set the speaking state', () => {
             actions.setIsSpeaking(true);
-            expect(actions.isSpeaking.get()).toBe(true);
+            expect(actions.getIsSpeaking().get()).toBe(true);
         });
 
         it('should notify subscribers when speaking state changes', () => {
@@ -279,7 +279,7 @@ describe('AudioCardActions', () => {
         it('should set all chunk playing states', () => {
             const states = new Map([[0, true], [1, false]]);
             actions.setChunkPlayingStates(states);
-            const result = store.get('chunkPlayingStates').get();
+            const result = actions.getChunkPlayingStates().get();
             expect(result.get(0)).toBe(true);
             expect(result.get(1)).toBe(false);
         });
@@ -302,7 +302,7 @@ describe('AudioCardActions', () => {
 
         it('should update the cardActiveStates map', () => {
             actions.setCardActive(0, true);
-            const states = store.get('cardActiveStates');
+            const states = actions.getCardActiveStates();
             expect(states.get().get(0)).toBe(true);
         });
 
@@ -315,7 +315,7 @@ describe('AudioCardActions', () => {
         it('should set all card active states', () => {
             const states = new Map([[0, true], [1, false]]);
             actions.setCardActiveStates(states);
-            const result = store.get('cardActiveStates').get();
+            const result = actions.getCardActiveStates().get();
             expect(result.get(0)).toBe(true);
             expect(result.get(1)).toBe(false);
         });
@@ -353,7 +353,7 @@ describe('AudioCardActions', () => {
         it('should set all card playing states', () => {
             const states = new Map([[0, true], [1, false]]);
             actions.setCardPlayingStates(states);
-            const result = store.get('cardPlayingStates').get();
+            const result = actions.getCardPlayingStates().get();
             expect(result.get(0)).toBe(true);
             expect(result.get(1)).toBe(false);
         });

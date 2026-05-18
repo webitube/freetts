@@ -18,7 +18,7 @@ export class ChunkRenderer {
         
         // Initialize reactive store and actions
         this.audioCardStore = AudioCardStore.getInstance();
-        this.audioCardActions = new AudioCardActions();
+        this.audioCardActions = this.audioCardStore.actions;
     }
 
     _getContainer() {

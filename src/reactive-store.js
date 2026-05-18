@@ -20,7 +20,7 @@ export class ReactiveStore {
      * @param {*} initialValue - Initial value
      * @returns {ReactiveValue}
      */
-    register(key, initialValue = null) {
+    register(key, initialValue = undefined) {
         if (!this.#registry.has(key)) {
             this.#registry.set(key, new ReactiveValue(initialValue));
         }

@@ -292,5 +292,6 @@ export class AudioCardActions {
         this.store.register('chunkPlayingStates', new Map()).set(new Map());
         this.store.register('cardPlayingStates', new Map()).set(new Map());
         this.store.register('cardActiveStates', new Map()).set(new Map());
+        this.store.clear();
     }
 }

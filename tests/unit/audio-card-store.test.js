@@ -7,11 +7,12 @@ describe('AudioCardStore', () => {
     let audioCardStore;
 
     beforeEach(() => {
-        // Reset singleton before each test
+        // Reset singletons before each test
         if (ReactiveStore.instance) {
             ReactiveStore.instance.clear();
         }
         ReactiveStore.instance = null;
+        AudioCardStore.resetInstance();
         audioCardStore = new AudioCardStore();
     });
 

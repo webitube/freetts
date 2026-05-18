@@ -117,7 +117,8 @@ describe('Global Integration: Reactive Architecture', () => {
             ];
 
             // Simulate worker message handling
-            player.workerComm._handleWorkerMessage({ data: { chunks } });
+            player.workerComm._handleWorkerMessage({ data: { status: 'stream', chunk: chunks[0] } });
+            player.workerComm._handleWorkerMessage({ data: { status: 'stream', chunk: chunks[1] } });
 
             // Step 7: Verify chunks are stored in reactive store
             const storedChunks = audioCardStore.chunks.get();
@@ -182,13 +183,13 @@ describe('Global Integration: Reactive Architecture', () => {
 
             // First playback
             player.play('First text', 'af_heart', 1);
-            player.workerComm._handleWorkerMessage({ data: { chunks: [{ text: 'First', audio: mockBlob }] } });
+            player.workerComm._handleWorkerMessage({ data: { status: 'stream', chunk: { text: 'First', audio: mockBlob } } });
             player.status = 'ready';
             player.chunkRenderer.audioElementCallback('ended', 0);
 
             // Second playback with different text
             player.play('Second text', 'cm_jo', 1.5);
-            player.workerComm._handleWorkerMessage({ data: { chunks: [{ text: 'Second', audio: mockBlob }] } });
+            player.workerComm._handleWorkerMessage({ data: { status: 'stream', chunk: { text: 'Second', audio: mockBlob } } });
             player.status = 'ready';
 
             // Verify new chunks replaced old ones
@@ -197,7 +198,7 @@ describe('Global Integration: Reactive Architecture', () => {
 
             // Third playback with same voice
             player.play('Third text', 'af_heart', 1);
-            player.workerComm._handleWorkerMessage({ data: { chunks: [{ text: 'Third', audio: mockBlob }] } });
+            player.workerComm._handleWorkerMessage({ data: { status: 'stream', chunk: { text: 'Third', audio: mockBlob } } });
 
             // Verify state is preserved across playbacks
             expect(audioCardStore.chunkCount.get()).toBe(1);
@@ -291,10 +292,8 @@ describe('Global Integration: Reactive Architecture', () => {
             player.currentChunkIndex = 0;
 
             // Simulate chunk removal through worker
-            player.workerComm._handleWorkerMessage({ data: { chunks: [
-                { text: 'Chunk 2', audio: mockBlob },
-                { text: 'Chunk 3', audio: mockBlob },
-            ] } });
+            player.workerComm._handleWorkerMessage({ data: { status: 'stream', chunk: { text: 'Chunk 2', audio: mockBlob } } });
+            player.workerComm._handleWorkerMessage({ data: { status: 'stream', chunk: { text: 'Chunk 3', audio: mockBlob } } });
 
             // Verify states are cleaned up
             expect(audioCardStore.cardPlayingStates.get().get(0)).toBe(false);

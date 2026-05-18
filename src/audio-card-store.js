@@ -9,11 +9,11 @@ export class AudioCardStore extends AudioCardActions {
     #store;
 
     constructor() {
-        const store = new ReactiveStore();
-        super(store);
         if (AudioCardStore.instance) {
             return AudioCardStore.instance;
         }
+        const store = new ReactiveStore();
+        super(store);
         AudioCardStore.instance = this;
         this.#store = store;
 
@@ -21,6 +21,13 @@ export class AudioCardStore extends AudioCardActions {
         this.chunks.subscribe(chunks => {
             this.chunkCount.set(chunks.length);
         });
+    }
+
+    /**
+     * Reset the singleton instance (primarily for testing)
+     */
+    static resetInstance() {
+        AudioCardStore.instance = null;
     }
 
     // ─── Public API ──────────────────────────────────────────────────────
