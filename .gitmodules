@@ -1,0 +1,3 @@
+[submodule "ReactiveTypescript"]
+	path = ReactiveTypescript
+	url = https://github.com/webitube/ReactiveTypescript.git
