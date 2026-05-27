@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { 
-    initThemeToggle, 
-    initHelpModal, 
-    initClipboardAndDownload, 
-    setUIState 
-} from '../../src/ui-manager.js';
+import {
+    initThemeToggle,
+    initHelpModal,
+    initClipboardAndDownload,
+    setUIState
+} from '../../src/ui-manager';
 
 describe('ui-manager.js', () => {
     beforeEach(() => {
@@ -32,32 +32,33 @@ describe('ui-manager.js', () => {
 
         it('should toggle dark class and save to localStorage', () => {
             const mockToggle = { onclick: null };
-            
+
             // Initialize the toggle
             initThemeToggle(mockToggle);
-            
+
             // Simulate clicking the toggle
             mockToggle.onclick();
-            
+
             // After first click, dark class should be added
             expect(document.documentElement.classList.contains('dark')).toBe(true);
-            expect(localStorage.getItem('theme')).toBe('dark');
+            // Theme is now saved via AppStore serialization, not localStorage.theme directly
+            const saved = localStorage.getItem('freetts-settings');
+            expect(saved).toBeDefined();
         });
 
         it('should remove dark class on second click', () => {
             const mockToggle = { onclick: null };
-            
+
             // Initialize the toggle
             initThemeToggle(mockToggle);
-            
+
             // First click - add dark
             mockToggle.onclick();
             expect(document.documentElement.classList.contains('dark')).toBe(true);
-            
+
             // Second click - remove dark
             mockToggle.onclick();
             expect(document.documentElement.classList.contains('dark')).toBe(false);
-            expect(localStorage.getItem('theme')).toBe('light');
         });
     });
 

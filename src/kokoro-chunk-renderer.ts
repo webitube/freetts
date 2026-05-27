@@ -1,34 +1,66 @@
 /**
- * ChunkRenderer handles DOM rendering for chunk cards.
+ * ChunkRenderer handles DOM rendering for Kokoro TTS chunk cards.
+ *
+ * Creates and manages the visual chunk cards displayed during Kokoro playback,
+ * including text labels, audio elements, event bindings, and seek-by-click
+ * functionality. Each card represents one audio chunk with its corresponding text.
+ *
+ * @example
+ * ```ts
+ * const renderer = new ChunkRenderer(kokoroPlayer);
+ * renderer.renderChunks();
+ * ```
  */
 
-import { debugLog } from "./debug-log";
+import { debugLog } from './debug-log';
 
 /**
- * ChunkRenderer manages chunk card DOM creation and manipulation
+ * Renders chunk cards into the DOM container for Kokoro TTS playback.
  */
 export class ChunkRenderer {
+    private player: any;
+
     /**
-     * @param {KokoroPlayer} player - Reference to KokoroPlayer instance
+     * Create a new ChunkRenderer bound to a KokoroPlayer instance.
+     * @param player - The parent KokoroPlayer instance.
      */
-    constructor(player) {
+    constructor(player: any) {
         this.player = player;
     }
 
-    _getContainer() {
+    /**
+     * Get the chunk container element by ID.
+     * @returns The container HTMLElement, or null if not found.
+     */
+    _getContainer(): HTMLElement | null {
         return document.getElementById(this.player.containerId);
     }
 
-    _resetPlaybackState(container) {
+    /**
+     * Reset playback state: pause all audio and remove playing indicators.
+     * @param container - The container element to reset (may be null).
+     */
+    _resetPlaybackState(container: HTMLElement | null): void {
         if (!container) return;
-        container.querySelectorAll('audio').forEach(a => a.pause());
+        container.querySelectorAll('audio').forEach((a: HTMLAudioElement) => a.pause());
         container.querySelectorAll('[data-chunk].playing').forEach(c => c.classList.remove('playing'));
     }
 
-    _bindAudioEventHandlers(audioEl, index, eventCallback) {
-        if (typeof audioEl.addEventListener !== 'function') {
-            return;
-        }
+    /**
+     * Bind audio event handlers to an HTMLAudioElement.
+     * Listens for play, pause, ended, waiting, playing, and playbackstatechange events
+     * and delegates to the parent player for state synchronization.
+     *
+     * @param audioEl - The audio element to bind handlers to.
+     * @param index - The chunk index associated with this audio element.
+     * @param eventCallback - Optional callback invoked on each audio event.
+     */
+    _bindAudioEventHandlers(
+        audioEl: HTMLAudioElement,
+        index: number,
+        eventCallback?: (event: string, cardIndex: number) => void,
+    ): void {
+        if (typeof audioEl.addEventListener !== 'function') return;
 
         audioEl.addEventListener('play', () => {
             this.player._onChunkPlay(index);
@@ -63,18 +95,18 @@ export class ChunkRenderer {
     }
 
     /**
-     * Render all chunks in the container
+     * Render all chunk cards into the container.
+     * Clears existing content, creates cards for each chunk, and scrolls
+     * to the current chunk if one is active.
      */
-    renderChunks() {
+    renderChunks(): void {
         const container = this._getContainer();
         if (!container) return;
 
-        // Update status text
         if (this.player.status === 'generating') {
             this.player.statusCallback(`Generating audio... (${this.player.chunks.length} chunk(s))`);
         }
 
-        // Clear and rebuild
         container.innerHTML = '';
 
         if (this.player.chunks.length === 0 && this.player.status !== 'generating') {
@@ -84,32 +116,42 @@ export class ChunkRenderer {
 
         container.classList.remove('hidden');
 
-        this.player.chunks.forEach((chunk, i) => {
-            const card = this.createChunkCard(chunk, i, this.audioElementCallback);
+        this.player.chunks.forEach((chunk: any, i: number) => {
+            const card = this.createChunkCard(chunk, i, this.audioElementCallback.bind(this));
             container.appendChild(card);
         });
 
-        // Scroll to current chunk
         if (this.player.currentChunkIndex >= 0 && this.player.currentChunkIndex < this.player.chunks.length) {
             const currentCard = container.children[this.player.currentChunkIndex];
             if (currentCard) {
-                currentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                (currentCard as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
     }
 
-    audioElementCallback(event, index) {
-        debugLog(`kokoro-chunk-renderer.audioElementCallback(): event=${event}: index=${index}`);
+    /**
+     * Default callback for audio element events (debug logging only).
+     * @param _event - The audio event name.
+     * @param _index - The chunk index.
+     */
+    audioElementCallback(_event: string, _index: number): void {
+        debugLog(`kokoro-chunk-renderer.audioElementCallback(): event=${_event}: index=${_index}`);
     }
 
     /**
-     * Create a chunk card DOM element
-     * @param {object} chunk - Chunk data with text
-     * @param {number} index - Chunk index
-     * @param {function(event: string, card index: integer): void} eventCallback - Callback for audio events
-     * @returns {HTMLElement} The card element
+     * Create a chunk card element containing text and an audio player.
+     * The card is clickable to seek directly to that chunk.
+     *
+     * @param chunk - The chunk data (text + audio Blob).
+     * @param index - The chunk index.
+     * @param audioElementCallback - Optional callback for audio events.
+     * @returns The created card HTMLElement.
      */
-    createChunkCard(chunk, index, audioElementCallback) {
+    createChunkCard(
+        chunk: any,
+        index: number,
+        audioElementCallback?: (event: string, cardIndex: number) => void,
+    ): HTMLElement {
         const card = document.createElement('div');
         const isActive = index === this.player.currentChunkIndex;
         card.className = `tts-card transition-all cursor-pointer ${
@@ -117,9 +159,8 @@ export class ChunkRenderer {
                 ? 'border border-blue-200 dark:border-blue-800'
                 : 'border border-transparent hover:bg-blue-100 dark:hover:bg-blue-900'
         }`;
-        card.setAttribute('data-chunk', index);
+        card.setAttribute('data-chunk', String(index));
 
-        // Click to seek
         card.onclick = () => {
             const container = this._getContainer();
             this._resetPlaybackState(container);
@@ -129,12 +170,10 @@ export class ChunkRenderer {
             this.player._playChunk(index);
         };
 
-        // Text label
         const textEl = document.createElement('p');
         textEl.className = 'text-xs mb-1';
         textEl.textContent = chunk.text;
 
-        // Audio controls
         const audioEl = this.createAudioElement(chunk, index, audioElementCallback);
 
         card.appendChild(textEl);
@@ -145,20 +184,25 @@ export class ChunkRenderer {
     }
 
     /**
-     * Create an audio element for a chunk
-     * @param {object} chunk - Chunk data with audio blob
-     * @param {number} index - Chunk index
-     * @param {function(event: string, card index: integer): void} eventCallback - Callback for audio events
-     * @returns {HTMLAudioElement}
+     * Create an HTMLAudioElement from a chunk's audio Blob.
+     * Configures the element with controls, inline playback, auto preload,
+     * and muted start (for mobile autoplay policy compliance).
+     *
+     * @param chunk - The chunk data containing the audio Blob.
+     * @param index - The chunk index.
+     * @param eventCallback - Optional callback for audio events.
+     * @returns The configured HTMLAudioElement.
      */
-    createAudioElement(chunk, index, eventCallback) {
+    createAudioElement(
+        chunk: any,
+        index: number,
+        eventCallback?: (event: string, cardIndex: number) => void,
+    ): HTMLAudioElement {
         const audioEl = document.createElement('audio');
         audioEl.id = `audio-chunk-${index}`;
-        audioEl.setAttribute('data-chunk', index);
+        audioEl.setAttribute('data-chunk', String(index));
         audioEl.src = URL.createObjectURL(chunk.audio);
-        //debugLog(`kokoro-chunk-renderer.createAudioElement(): id=${audioEl.id}: Created audio element for chunk ${index} with blob URL ${audioEl.src}`);
 
-        // Register with AudioPlayer so playChunk() can find it
         this.player.audioPlayer.registerAudioElement(index, audioEl);
 
         audioEl.controls = true;

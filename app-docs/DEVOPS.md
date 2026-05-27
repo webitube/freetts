@@ -4,21 +4,25 @@ This document covers building, testing, deployment, and infrastructure for the F
 
 ## Overview
 
-FreeTTS is a single‑page web application built with vanilla JavaScript and uses Vite as the build tool. The application features a hybrid Markdown editor (Milkdown) and a dual Text‑to‑Speech engine: the native Web Speech API and Kokoro TTS (a neural TTS engine powered by `kokoro-js` and ONNX Runtime Web, running in a Web Worker). The project is designed to be lightweight, portable, and easy to integrate.
+FreeTTS is a TypeScript single‑page web application (no frontend framework) that uses Vite as the build tool. The application features a hybrid Markdown editor (Milkdown) and a dual Text‑to‑Speech engine: the native Web Speech API and Kokoro TTS (a neural TTS engine powered by `kokoro-js` and ONNX Runtime Web, running in a Web Worker). State management is handled by a centralized reactive store (`AppStore`) powered by ReactiveTypescript. The project is designed to be lightweight, portable, and easy to integrate.
 
-**Source structure (16 modular files in `src/`, ~2,168 total lines):**
-- **Entry:** `app.js` (347 lines) — initializes all modules, handles DOMContentLoaded, sets up callbacks for all subsystems
-- **Editor:** `editor-manager.js` (100 lines) — `EditorManager` class: Milkdown initialization and mode switching
-- **TTS:** `tts-controller.js` (187 lines) — `TTSController` class: playback orchestration for both engines, selection-aware TTS
-- **Kokoro:** `kokoro-player.js` (530), `kokoro-audio-player.js` (97), `kokoro-chunk-manager.js` (54), `kokoro-chunk-renderer.js` (140), `kokoro-ui-manager.js` (113), `kokoro-worker-communication.js` (177)
-- **Worker:** `tts-worker.js` (89 lines) — Web Worker running kokoro-js + onnxruntime-web with streaming text splitting
-- **Shared:** `settings-persistence.js` (202), `voice-manager.js` (169), `ui-manager.js` (104), `highlighting-utils.js` (72), `debug-log.js` (122), `global-switches.js` (9)
+**Source structure (17 modular files in `src/`, 16 `.ts` + 1 `.js` Web Worker):**
+- **State:** `app-store.ts` — `AppStore` class: centralized reactive state (ReactiveTypescript), localStorage persistence, enums (`EngineEnum`, `StatusEnum`, `ThemeEnum`)
+- **Entry:** `app.ts` — initializes all modules, handles DOMContentLoaded, sets up callbacks for all subsystems
+- **Editor:** `editor-manager.ts` — `EditorManager` class: Milkdown initialization and mode switching
+- **TTS:** `tts-controller.ts` — `TTSController` class: playback orchestration for both engines, selection-aware TTS
+- **Kokoro:** `kokoro-player.ts`, `kokoro-audio-player.ts`, `kokoro-chunk-manager.ts`, `kokoro-chunk-renderer.ts`, `kokoro-worker-communication.ts`
+- **Worker:** `tts-worker.js` — Web Worker running kokoro-js + onnxruntime-web with streaming text splitting
+- **Shared:** `settings-persistence.ts`, `voice-manager.ts`, `ui-manager.ts`, `app-utils.ts`, `highlighting-utils.ts`, `debug-log.ts`, `global-switches.ts`
 
 **Key technology stack:**
-- **Build tool:** Vite
-- **Editor framework:** Milkdown (bundled via npm)
+- **Language:** TypeScript (ES2020 target, strict mode, experimental decorators)
+- **Build tool:** Vite 8
+- **State management:** ReactiveTypescript (reactive singleton store)
+- **Editor framework:** Milkdown 7.20 (bundled via npm)
 - **TTS engines:** Web Speech API + Kokoro TTS (`kokoro-js`, ONNX Runtime Web)
 - **Off‑thread audio generation:** Web Worker (`src/tts-worker.js`)
+- **Testing:** Vitest 4 with happy-dom (unit + integration tests)
 - **Styling:** Tailwind CSS (pre‑compiled)
 - **Package manager:** npm
 - **Hosting:** GitHub Pages (static hosting)
@@ -48,7 +52,7 @@ FreeTTS is a single‑page web application built with vanilla JavaScript and use
    ```bash
    npm install
    ```
-   This installs Vite (dev dependency), Milkdown packages, and the Kokoro TTS stack (`kokoro-js`, `onnxruntime-web`, `phonemizer`).
+   This installs Vite (dev dependency), Milkdown packages, ReactiveTypescript, and the Kokoro TTS stack (`kokoro-js`, `onnxruntime-web`, `phonemizer`).
 
 3. **Verify installation**
    - Check Node.js version: `node --version`
@@ -62,7 +66,7 @@ The project does not require a database, external API keys, or environment varia
 Run the development server with hot‑module replacement (HMR):
 
 ```bash
-npx vite
+npm run dev
 ```
 
 Vite will start the server, usually at `http://localhost:5173`. Open this URL in a browser to see the application. Any changes to source files will trigger a live reload.
@@ -113,10 +117,39 @@ export default defineConfig({
 
 ## Testing
 
-Currently, the project does not have an automated test suite. However, manual testing should cover:
+The project uses **Vitest 4** with **happy-dom** for automated testing.
 
-1. **Editor modes:** Switch between "Reveal Codes" and "Visual" modes and verify content synchronization (`src/editor-manager.js`).
-2. **Web Speech TTS:** Select text and click the play button; ensure word‑level highlighting works in both modes (`src/tts-controller.js`, `src/highlighting-utils.js`).
+### Test Structure
+
+- **Unit tests:** `tests/unit/` — 10 test files covering individual modules
+- **Integration tests:** `tests/integration/` — 2 test files for cross-module flows
+- **Test setup:** `tests/setup.js` — mocks for `localStorage`, `speechSynthesis`, and other DOM APIs
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run specific test file
+npx vitest run tests/unit/<filename>.test.js
+
+# Run tests matching a pattern
+npx vitest run -t "<pattern>"
+```
+
+### Manual Testing Checklist
+
+In addition to automated tests, manual testing should cover:
+
+1. **Editor modes:** Switch between "Reveal Codes" and "Visual" modes and verify content synchronization (`src/editor-manager.ts`).
+2. **Web Speech TTS:** Select text and click the play button; ensure word‑level highlighting works in both modes (`src/tts-controller.ts`, `src/highlighting-utils.ts`).
 3. **Kokoro TTS:** Switch the engine selector to "Kokoro TTS", select text, and play. Verify:
    - Audio chunks appear as cards and play sequentially without cutting each other short
    - The active chunk is highlighted with a blue border and blue background
@@ -130,14 +163,13 @@ Currently, the project does not have an automated test suite. However, manual te
    - Auto-advance between chunks shows "▶ Tap to play" indicator on mobile
    - Desktop browsers still auto-play without requiring user interaction
 5. **Engine switching:** Toggle between Web Speech and Kokoro, verify each plays correctly.
-6. **Theme toggling:** Click the theme icon and verify that light/dark modes are applied and persisted (`src/ui-manager.js`).
+6. **Theme toggling:** Click the theme icon and verify that light/dark modes are applied and persisted (`src/ui-manager.ts`).
 7. **Export features:** Test the "Copy" and "Download .md" buttons.
 8. **Responsive layout:** Resize the browser and confirm the UI adapts correctly.
 9. **Pitch slider:** Test pitch control (range: -2 to +2, step: 0.5) in both Web Speech and Kokoro TTS modes — it should work on all platforms and engines. Note: Safari Web Speech omits pitch (`if (!isSafari)`).
-10. **Settings persistence:** Verify engine, voice, speed, pitch are saved to localStorage under key `freetts-settings` and restored on reload (`src/settings-persistence.js`).
+10. **Settings persistence:** Verify engine, voice, speed, pitch are saved to localStorage under key `freetts-settings` and restored on reload (`src/settings-persistence.ts`, `src/app-store.ts`).
 11. **Keyboard shortcut:** Verify `Ctrl+Enter` (or `Cmd+Enter`) toggles playback.
 12. **Reset Settings button:** Verify it resets all TTS controls to defaults while keeping user preferences.
-**Future improvements:** Adding unit tests and integration tests with a headless browser (e.g., Playwright) is recommended.
 
 ## Deployment
 
@@ -222,4 +254,4 @@ Because FreeTTS is a static front‑end application, monitoring focuses on user�
 
 ---
 
-*Last updated: 2026‑05‑02*
+*Last updated: 2026‑05‑27*

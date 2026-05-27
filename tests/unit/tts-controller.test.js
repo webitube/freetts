@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { TTSController } from '../../src/tts-controller.js';
+import { TTSController } from '../../src/tts-controller';
+import { AppStore } from '../../src/app-store';
 
 // Mock highlighting-utils
-vi.mock('../../src/highlighting-utils.js', () => ({
+vi.mock('../../src/highlighting-utils', () => ({
     cleanMarkdown: vi.fn((text) => text.replace(/[#*_~`]/g, '')),
 }));
 
@@ -41,12 +42,16 @@ describe('tts-controller.js', () => {
     let mockIsSafari;
 
     beforeEach(() => {
-     mockElements = {
+        // Reset AppStore to defaults before each test
+        AppStore.instance.isSpeaking.set(false);
+        AppStore.instance.engine.set('webspeech');
+
+        mockElements = {
             engineSelect: { value: 'webspeech' },
             voiceSelect: { value: 'Voice 1' },
             speedSlider: { value: '1' },
             pitchSlider: { value: '0' },
-            source: { value: '', selectionStart: 0, selectionEnd: 0 },
+            source: { value: '', selectionStart: 0, selectionEnd: 0, focus: vi.fn(), setSelectionRange: vi.fn() },
             playIcon: { classList: { toggle: vi.fn() } },
             stopIcon: { classList: { toggle: vi.fn() } },
             btnTts: { classList: { toggle: vi.fn() } },
@@ -90,8 +95,8 @@ describe('tts-controller.js', () => {
 
     describe('constructor', () => {
         it('should initialize with default values', () => {
-            expect(ttsController.activeEngine).toBe('webspeech');
-            expect(ttsController.isSpeaking).toBe(false);
+            expect(ttsController.getActiveEngine()).toBe('webspeech');
+            expect(ttsController.getIsSpeaking()).toBe(false);
             expect(ttsController.speechOffsetStart).toBe(0);
             expect(ttsController.kokoroTextToSpeak).toBe('');
             expect(ttsController.kokoroStartOffset).toBe(0);
@@ -107,12 +112,12 @@ describe('tts-controller.js', () => {
     describe('setActiveEngine', () => {
         it('should set engine to webspeech', () => {
             ttsController.setActiveEngine('webspeech');
-            expect(ttsController.activeEngine).toBe('webspeech');
+            expect(ttsController.getActiveEngine()).toBe('webspeech');
         });
 
         it('should set engine to kokoro', () => {
             ttsController.setActiveEngine('kokoro');
-            expect(ttsController.activeEngine).toBe('kokoro');
+            expect(ttsController.getActiveEngine()).toBe('kokoro');
         });
     });
 
@@ -127,8 +132,8 @@ describe('tts-controller.js', () => {
 
     describe('togglePlayback', () => {
         it('should stop when currently speaking', () => {
-            ttsController.isSpeaking = true;
-            ttsController.activeEngine = 'webspeech';
+            AppStore.instance.isSpeaking.set(true);
+            AppStore.instance.engine.set('webspeech');
             
             const stopWebSpeech = vi.fn();
             const stopKokoro = vi.fn();
@@ -151,6 +156,9 @@ describe('tts-controller.js', () => {
             const stopKokoro = vi.fn();
             const loadTTSSettings = vi.fn();
             const statusCallback = vi.fn();
+
+            // Reset speaking state
+            AppStore.instance.isSpeaking.set(false);
 
             // Mock empty selection
             global.window.getSelection = () => ({
@@ -193,7 +201,7 @@ describe('tts-controller.js', () => {
             ttsController.speakWithWebSpeech('Hello World', 0, stopWebSpeech);
 
             expect(window.speechSynthesis.speak).toHaveBeenCalled();
-            expect(ttsController.isSpeaking).toBe(true);
+            expect(ttsController.getIsSpeaking()).toBe(true);
 
             window.speechSynthesis = originalSpeechSynthesis;
         });
@@ -228,7 +236,7 @@ describe('tts-controller.js', () => {
             ttsController.stopWebSpeech();
 
             expect(cancelMock).toHaveBeenCalled();
-            expect(ttsController.isSpeaking).toBe(false);
+            expect(ttsController.getIsSpeaking()).toBe(false);
 
             window.speechSynthesis = originalSpeechSynthesis;
         });
@@ -266,7 +274,7 @@ describe('tts-controller.js', () => {
             expect(mockElements.playIcon.classList.toggle).toHaveBeenCalledWith('hidden', true);
             expect(mockElements.stopIcon.classList.toggle).toHaveBeenCalledWith('hidden', false);
             expect(mockElements.btnTts.classList.toggle).toHaveBeenNthCalledWith(1, 'text-red-600', true);
-            expect(ttsController.isSpeaking).toBe(true);
+            expect(ttsController.getIsSpeaking()).toBe(true);
         });
 
         it('should update UI for inactive state', () => {
@@ -275,7 +283,7 @@ describe('tts-controller.js', () => {
             expect(mockElements.playIcon.classList.toggle).toHaveBeenCalledWith('hidden', false);
             expect(mockElements.stopIcon.classList.toggle).toHaveBeenCalledWith('hidden', true);
             expect(mockElements.btnTts.classList.toggle).toHaveBeenNthCalledWith(1, 'text-red-600', false);
-            expect(ttsController.isSpeaking).toBe(false);
+            expect(ttsController.getIsSpeaking()).toBe(false);
         });
     });
 });

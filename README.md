@@ -2,7 +2,7 @@
 
 ***Free Markdown Editor with integrated Web-based TTS. Lightweight. No downloads for Web Speech.***
 
-*This project is a single-file application designed for portability and ease of integration.*
+*A TypeScript-powered single-page application designed for portability, reactivity, and ease of integration.*
 
 ## **Key Features**
 
@@ -15,23 +15,31 @@
 
 Unlike standard screen readers, our TTS engine is optimized for Markdown:
 
-* **Syntax Cleaning:** Automatically strips structural symbols (like \#\#\#, \*\*, | \--- |) during playback to ensure natural-sounding speech.  
+* **Syntax Cleaning:** Automatically strips structural symbols (like `###`, `**`, `| --- |`) during playback to ensure natural-sounding speech.  
 * **Word-Level Tracking:** Synchronizes the voice engine with the editor. As words are spoken, the corresponding text in the source code is automatically highlighted.  
 * **Selection Support:** Highlight a specific paragraph to listen to it, or place the cursor to play from that point forward.
 
-### **3\. Modern UI/UX**
+### **3\. Reactive State Management**
 
-* **Theme Switcher:** Seamless transition between Light and Dark modes, persisted via local storage.  
+* **AppStore:** Centralized reactive state powered by [ReactiveTypescript](https://github.com/ReactiveTypescript/ReactiveTypescript), ensuring all modules stay synchronized without manual prop drilling.  
+* **Settings Persistence:** Engine, voice, speed, pitch, and theme settings are automatically saved to `localStorage` and restored on reload.
+
+### **4\. Modern UI/UX**
+
+* **Theme Switcher:** Seamless transition between Light and Dark modes, persisted via local storage (respects `prefers-color-scheme`).  
 * **Responsive Design:** Built with Tailwind CSS to ensure a premium experience across mobile, tablet, and desktop.  
 * **Integrated Guide:** A comprehensive built-in cheatsheet for Markdown syntax and TTS shortcuts.
 
 ## **Technical Stack**
 
-* **Core Editor:** [Milkdown](https://milkdown.dev/) (Plugin-based WYSIWYG framework).  
-* **Styling:** [Tailwind CSS](https://tailwindcss.com/) for fluid layouts and dark mode.  
-* **Icons:** [Lucide](https://lucide.dev/) (via SVG implementation).  
-* **TTS Engine:** Native Web Speech API with custom regex cleaning logic.  
-* **Module Management:** ESM via [esm.sh](https://esm.sh/).
+* **Language:** TypeScript (ES2020 target, strict mode)  
+* **Build Tool:** Vite 8 (HMR, optimized bundling)  
+* **Core Editor:** [Milkdown](https://milkdown.dev/) 7.20 (Plugin-based WYSIWYG framework)  
+* **State Management:** [ReactiveTypescript](https://github.com/ReactiveTypescript/ReactiveTypescript) (reactive singleton store)  
+* **Styling:** [Tailwind CSS](https://tailwindcss.com/) for fluid layouts and dark mode  
+* **Icons:** [Lucide](https://lucide.dev/) (via inline SVG)  
+* **TTS Engines:** Native Web Speech API + Kokoro TTS (`kokoro-js` + ONNX Runtime Web)  
+* **Testing:** Vitest 4 with happy-dom (unit + integration tests)
 
 ## **Requirements**
 
@@ -72,7 +80,27 @@ The editor supports GitHub Flavored Markdown (GFM), including:
 
 ## **Development**
 
-For development, build, and deployment instructions, see [CLAUDE.md](./CLAUDE.md) and [DEVOPS.md](./DEVOPS.md).
+```bash
+# Install dependencies
+npm install
+
+# Start development server (Vite with HMR)
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+For detailed architecture, build, deployment, and CI/CD instructions, see:
+- [CLAUDE.md](./app-docs/CLAUDE.md) — Architecture and module guide
+- [DEVOPS.md](./app-docs/DEVOPS.md) — Build, test, deploy, and troubleshooting
+- [APP-SUMMARY.md](./app-docs/APP-SUMMARY.md) — High-level overview and dependency map
 
 
 ## **Acknowledgements**

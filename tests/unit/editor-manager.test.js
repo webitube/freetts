@@ -75,9 +75,9 @@ describe('editor-manager.js', () => {
 
     describe('constructor', () => {
         it('should initialize with default values', () => {
-            expect(editorManager.currentMarkdown).toBe(initialMarkdown);
-            expect(editorManager.isSourceMode).toBe(true);
-            expect(editorManager.milkdownEditor).toBeNull();
+            expect(editorManager.getCurrentMarkdown()).toBe(initialMarkdown);
+            expect(editorManager.isCurrentlySourceMode()).toBe(true);
+            expect(editorManager.getEditor()).toBeNull();
         });
 
         it('should store elements reference', () => {
@@ -100,7 +100,7 @@ describe('editor-manager.js', () => {
         it('should set markdown content', () => {
             const newMarkdown = '# New Content';
             editorManager.setCurrentMarkdown(newMarkdown);
-            expect(editorManager.currentMarkdown).toBe(newMarkdown);
+            expect(editorManager.getCurrentMarkdown()).toBe(newMarkdown);
         });
     });
 
@@ -113,23 +113,24 @@ describe('editor-manager.js', () => {
             // Mock milkdown editor to skip async creation
             editorManager.milkdownEditor = { action: vi.fn() };
             
-            // Manually switch to visual mode for testing
-            editorManager.isSourceMode = false;
+            // Switch to visual mode
+            await editorManager.switchToVisual();
             
             expect(editorManager.isCurrentlySourceMode()).toBe(false);
         });
     });
 
     describe('switchToSource', () => {
-        it('should switch to source mode', () => {
+        it('should switch to source mode', async () => {
             // First switch to visual
-            editorManager.isSourceMode = false;
-            editorManager.currentMarkdown = '# Visual Content';
+            editorManager.milkdownEditor = { action: vi.fn() };
+            await editorManager.switchToVisual();
+            editorManager.setCurrentMarkdown('# Visual Content');
             
             // Then switch back to source
             editorManager.switchToSource();
             
-            expect(editorManager.isSourceMode).toBe(true);
+            expect(editorManager.isCurrentlySourceMode()).toBe(true);
             expect(mockElements.source.value).toBe('# Visual Content');
             expect(mockElements.container.classList.add).toHaveBeenCalledWith('source-mode');
         });
@@ -151,12 +152,14 @@ describe('editor-manager.js', () => {
             
             await editorManager.switchToVisual();
             
-            expect(editorManager.isSourceMode).toBe(false);
+            expect(editorManager.isCurrentlySourceMode()).toBe(false);
             expect(mockElements.container.classList.remove).toHaveBeenCalledWith('source-mode');
         });
 
         it('should not switch if already in visual mode', async () => {
-            editorManager.isSourceMode = false;
+            // First switch to visual
+            editorManager.milkdownEditor = { action: vi.fn() };
+            await editorManager.switchToVisual();
             
             const mockEditor = { action: vi.fn() };
             editorManager.milkdownEditor = mockEditor;
@@ -174,7 +177,7 @@ describe('editor-manager.js', () => {
             
             await editorManager.switchToVisual();
             
-            expect(editorManager.currentMarkdown).toBe('# Test Markdown');
+            expect(editorManager.getCurrentMarkdown()).toBe('# Test Markdown');
         });
     });
 

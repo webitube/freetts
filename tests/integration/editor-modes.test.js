@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { EditorManager } from '../../src/editor-manager.js';
+import { AppStore } from '../../src/app-store';
 
 // Mock Milkdown modules
 vi.mock('@milkdown/core', () => ({
@@ -80,8 +81,9 @@ describe('Integration: Editor Modes', () => {
         });
 
         it('should update source value when switching from visual to source', () => {
-            editorManager.currentMarkdown = '# Updated in Visual';
-            editorManager.isSourceMode = false;
+            // EditorManager now uses AppStore for state
+            AppStore.instance.currentMarkdown.set('# Updated in Visual');
+            AppStore.instance.isSourceMode.set(false);
             
             editorManager.switchToSource();
             

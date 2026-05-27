@@ -1,22 +1,29 @@
 /**
  * KokoroPlayer — chunk-based TTS player for Kokoro TTS.
  *
- * Each audio chunk is rendered as an independent <audio> element.
- * Users can click any chunk to seek into it. Chunks auto-play in sequence.
+ * Orchestrates chunk-based audio playback for the Kokoro neural TTS engine.
+ * Delegates to sub-modules for worker communication, audio playback, chunk
+ * state management, and DOM rendering. Handles mobile autoplay policy
+ * compliance (muted start + tap-to-play indicators).
  *
- * Communicates with tts-worker.js via postMessage.
- * All DOM updates go through the containerId + statusCallback.
+ * Sub-modules:
+ * - `kokoro-worker-communication.ts` — Worker lifecycle and message routing
+ * - `kokoro-audio-player.ts` — Audio element lifecycle and playback
+ * - `kokoro-chunk-manager.ts` — Chunk state delegation
+ * - `kokoro-chunk-renderer.ts` — Chunk card DOM rendering
  *
- * Refactored into smaller modules:
- * - kokoro-worker-communication.js - Worker management
- * - kokoro-audio-player.js - Audio playback
- * - kokoro-chunk-manager.js - Chunk state logic
- * - kokoro-chunk-renderer.js - Chunk rendering
+ * @example
+ * ```ts
+ * const player = new KokoroPlayer('chunk-container', statusCb, deviceCb);
+ * await player.play('Hello world', 'af_heart', 1.0);
+ * player.stop();
+ * player.downloadMerged();
+ * ```
  */
-import { WorkerCommunication } from './kokoro-worker-communication.js';
-import { AudioPlayer } from './kokoro-audio-player.js';
-import { ChunkManager } from './kokoro-chunk-manager.js';
-import { ChunkRenderer } from './kokoro-chunk-renderer.js';
+import { WorkerCommunication } from './kokoro-worker-communication';
+import { AudioPlayer } from './kokoro-audio-player';
+import { ChunkManager } from './kokoro-chunk-manager';
+import { ChunkRenderer } from './kokoro-chunk-renderer';
 
 import {
     debugLog,
@@ -24,18 +31,91 @@ import {
     debugWarn,
     debugWarnEnd,
     debugError,
-    debugErrorEnd
-} from './debug-log.js'
+    debugErrorEnd,
+} from './debug-log';
 
+import { AppStore, StatusEnum } from './app-store';
+
+/**
+ * Chunk-based audio playback orchestrator for Kokoro TTS.
+ */
 export class KokoroPlayer {
+    /** ID of the DOM container element for chunk cards. */
+    containerId: string;
+
+    /** Callback invoked with status messages. */
+    statusCallback: (msg: string) => void;
+
+    /** Callback invoked when the active device changes. */
+    activeDeviceCallback: (device: string) => void;
+
+    /** Optional callback invoked when the UI speaking state changes. */
+    uiStateCallback?: (active: boolean) => void;
+
+    /** Optional callback for scroll synchronization. */
+    scrollCallback?: (offset: number, length: number) => void;
+
+    /** Optional callback invoked when all playback is complete. */
+    onPlayOverCallback?: () => void;
+
+    // Player state
+
+    /** Array of generated audio chunks. */
+    chunks: any[] = [];
+
+    /** Index of the currently playing chunk. */
+    currentChunkIndex: number = -1;
+
+    /** Current player status (`'ready'`, `'generating'`, `'error'`). */
+    status: string = 'ready';
+
+    /** Whether the player is currently speaking. */
+    isSpeaking: boolean = false;
+
+    /** Merged WAV Blob of all chunks (for download). */
+    mergedBlob: Blob | null = null;
+
+    /** Available Kokoro voices (populated after worker init). */
+    voices: any = null;
+
+    /** Active device backend (`'webgpu'` or `'wasm'`). */
+    activeDevice: string | null = null;
+
+    /** Whether the current browser is a mobile browser. */
+    isMobile: boolean;
+
+    /** Sub-module: Web Worker communication. */
+    workerComm: WorkerCommunication;
+
+    /** Sub-module: Audio element lifecycle. */
+    audioPlayer: AudioPlayer;
+
+    /** Sub-module: Chunk state delegation. */
+    chunkManager: ChunkManager;
+
+    /** Sub-module: Chunk card DOM rendering. */
+    chunkRenderer: ChunkRenderer;
+
+    _onChunkPlay?: (index: number) => void;
+
     /**
-     * @param {string} containerId - ID of the DOM container for chunk list
-     * @param {function(string): void} statusCallback - Called with status strings
-     * @param {function(string): void} activeDeviceCallback - Called with active device string
-     * @param {function(boolean): void} [uiStateCallback] - Called with isSpeaking state
-     * @param {function(number, number): void} [scrollCallback] - Called with text offset and length for scrolling the source textarea
+     * Creates a new KokoroPlayer instance.
+     *
+     * @param containerId - ID of the DOM container for chunk cards.
+     * @param statusCallback - Callback invoked with status messages.
+     * @param activeDeviceCallback - Callback invoked when the active device changes.
+     * @param uiStateCallback - Optional callback for UI speaking state changes.
+     * @param scrollCallback - Optional callback for scroll synchronization.
+     * @param onPlayOverCallback - Optional callback invoked when all playback is complete.
      */
-    constructor(containerId, statusCallback, activeDeviceCallback, uiStateCallback, scrollCallback, onPlayOverCallback) {
+    constructor(
+        containerId: string,
+        statusCallback: (msg: string) => void,
+        activeDeviceCallback: (device: string) => void,
+        uiStateCallback?: (active: boolean) => void,
+        scrollCallback?: (offset: number, length: number) => void,
+        onPlayOverCallback?: () => void,
+    ) {
         this.containerId = containerId;
         this.statusCallback = statusCallback;
         this.activeDeviceCallback = activeDeviceCallback;
@@ -43,59 +123,66 @@ export class KokoroPlayer {
         this.scrollCallback = scrollCallback;
         this.onPlayOverCallback = onPlayOverCallback;
 
-        // Player state
-        this.chunks = [];            // { text, audio: Blob }
-        this.currentChunkIndex = -1;
-        this.status = 'ready';       // 'loading' | 'ready' | 'generating' | 'error'
-        this.isSpeaking = false;
-        this.mergedBlob = null;
-        this.voices = null;
-        
-        // Kokoro backend device (WebGPU or WASM)
-        this.activeDevice = null;
-        
-        // Mobile browser detection - autoplay policies are much stricter on mobile
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
             || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
 
-        // Initialize sub-modules
         this.workerComm = new WorkerCommunication(this);
         this.audioPlayer = new AudioPlayer(this);
         this.chunkManager = new ChunkManager(this);
         this.chunkRenderer = new ChunkRenderer(this);
     }
 
-    _getContainer() {
+    /**
+     * Get the DOM container element for chunk cards.
+     * @returns The container HTMLElement, or null if not found.
+     */
+    _getContainer(): HTMLElement | null {
         return document.getElementById(this.containerId);
     }
 
-    _getCard(index) {
+    /**
+     * Get the chunk card element at the given index.
+     * @param index - The chunk index to look up.
+     * @returns The card HTMLElement, or null if not found.
+     */
+    _getCard(index: number): HTMLElement | null {
         const container = this._getContainer();
         if (!container) return null;
         return container.querySelector(`[data-chunk="${index}"]`) || container.querySelector(`[data-index="${index}"]`);
     }
 
-    _getAudioElement(index) {
+    /**
+     * Get the audio element for a specific chunk.
+     * @param index - The chunk index.
+     * @returns The HTMLAudioElement, or null if not found.
+     */
+    _getAudioElement(index: number): HTMLAudioElement | null {
         const container = this._getContainer();
         return container ? container.querySelector(`audio[data-chunk="${index}"]`) : null;
     }
 
-    // ─── Public API ──────────────────────────────────────────────────
-
-    setActiveDevice(newActiveDevice) {
+    /**
+     * Set the active Kokoro device backend and notify all subscribers.
+     * @param newActiveDevice - The device backend (`'webgpu'` or `'wasm'`).
+     */
+    setActiveDevice(newActiveDevice: string): void {
         this.activeDevice = newActiveDevice;
+        AppStore.instance.activeDevice.set(newActiveDevice);
         this.activeDeviceCallback(newActiveDevice);
     }
 
     /**
-     * Start TTS playback. If the model isn't ready, initializes it first.
+     * Start TTS playback for the given text using Kokoro.
+     * Resets state, initializes the worker, and sends the synthesis request.
+     * @param textToSpeak - The text to synthesize.
+     * @param voice - The voice identifier (e.g., `'af_heart'`).
+     * @param speed - The playback speed multiplier.
      */
-    async play(textToSpeak, voice, speed) {
-        // Reset state
+    async play(textToSpeak: string, voice: string, speed: number): Promise<void> {
         this.chunks = [];
         this.currentChunkIndex = -1;
         this.mergedBlob = null;
-        this._setStatusState(`generating`, `Generating audio...`);
+        this._setStatusState('generating', 'Generating audio...');
         this._setUIState(true);
         this.renderChunks();
 
@@ -104,22 +191,22 @@ export class KokoroPlayer {
         if (!this.workerComm.workerReady) {
             this._setStatusState('loading', 'Model still loading...');
             setTimeout(() => {
-                this._setStatusState('ready', 'Ready.')
+                this._setStatusState('ready', 'Ready.');
             }, 3000);
             this._setStatusState('ready', 'Ready.');
             this._setUIState(false);
             return;
         }
 
-        // Send text to worker
         this.workerComm.worker.postMessage({ text: textToSpeak, voice, speed });
     }
 
-    /** Stop all playback and reset state. */
-    stop() {
+    /**
+     * Stop all playback: pause audio, clear playing indicators, and reset state.
+     */
+    stop(): void {
         this.audioPlayer.stopAll();
 
-        // Clear playing state from all cards
         const container = this._getContainer();
         if (container) {
             container.querySelectorAll('[data-chunk].playing').forEach(card => {
@@ -127,7 +214,6 @@ export class KokoroPlayer {
             });
         }
 
-        //this.chunks = [];
         this.currentChunkIndex = -1;
         this.mergedBlob = null;
         this.status = 'ready';
@@ -135,8 +221,11 @@ export class KokoroPlayer {
         this.renderChunks();
     }
 
-    /** Download the merged audio Blob. */
-    downloadMerged() {
+    /**
+     * Trigger a download of the merged WAV audio blob.
+     * Does nothing if no merged blob is available.
+     */
+    downloadMerged(): void {
         if (!this.mergedBlob) return;
         const url = URL.createObjectURL(this.mergedBlob);
         const a = document.createElement('a');
@@ -146,75 +235,69 @@ export class KokoroPlayer {
         URL.revokeObjectURL(url);
     }
 
-    /** Destroy the player and clean up resources. */
-    destroy() {
+    /**
+     * Destroy the player: clean up audio elements and terminate the worker.
+     */
+    destroy(): void {
         this.audioPlayer.cleanup();
         this.workerComm.destroy();
     }
 
     /**
-     * Get the active Kokoro backend device indicator string.
-     * @returns {string} The device indicator (e.g., " (WebGPU)" or " (WASM)") or empty string if not available.
+     * Get the active device backend as an uppercase string.
+     * @returns The device string (e.g., `'WEBGPU'`), or empty string if not set.
      */
-    getActiveDevice() {
+    getActiveDevice(): string {
         return this.activeDevice ? this.activeDevice.toUpperCase() : '';
     }
 
-    // ─── Rendering ───────────────────────────────────────────────────
-
-    renderChunks() {
+    /**
+     * Render all chunk cards by delegating to the ChunkRenderer.
+     */
+    renderChunks(): void {
         this.chunkRenderer.renderChunks();
     }
 
     /**
-     * Append a single chunk card incrementally (for streaming)
-     * @param {object} chunk - Chunk data with text and audio
-     * @param {number} index - Chunk index
+     * Append a new chunk card to the container.
+     * Binds event handlers for playing and ended events, and auto-advances to the next chunk.
+     * @param chunk - The chunk data (text + audio Blob).
+     * @param index - The chunk index.
      */
-    _appendChunkCard(chunk, index) {
+    _appendChunkCard(chunk: any, index: number): void {
         const container = this._getContainer();
-        if (!container || !this.isSpeaking)
-        {
-            this._setStatusState('ready', "Ready.")
+        if (!container || !this.isSpeaking) {
+            this._setStatusState('ready', 'Ready.');
             return;
         }
 
-        const card = this.chunkRenderer.createChunkCard(chunk, index, (event, cardIndex) => {
-            // @param {function(event: string, card index: integer): void} eventCallback - Callback for audio events
-            // event: play, pause, ended, waiting, playing
-            const card = container.children[index];
-            if (event == 'playing')
-            {
+        const card = this.chunkRenderer.createChunkCard(chunk, index, (event: string, cardIndex: number) => {
+            const card = container.children[index] as HTMLElement;
+            if (event === 'playing') {
                 card.classList.add('playing');
                 card.classList.add('active');
-            }
-            else if (event == 'ended')
-            {
+            } else if (event === 'ended') {
                 card.classList.remove('playing');
-                const isLastCard = index == (container.children.length - 1);
-                if (!isLastCard)
-                {
+                const isLastCard = index === container.children.length - 1;
+                if (!isLastCard) {
                     const nextCardIndex = index + 1;
                     this._playChunk(nextCardIndex);
-                    //debugLog(`kokoro-player.audioEventCallback(): Play next chunk: ${nextCardIndex}`);
                 }
             }
-            //debugLog(`kokoro-player.audioEventCallback(): PLAY: event=${event}: index=${index}, cardIndex=${cardIndex}: card.id=${card.id}`);
         });
         container.appendChild(card);
     }
 
     /**
-     * Start playback from a specific chunk (used during streaming generation)
-     * Uses the same robust logic as _playChunk to handle muted audio and autoplay.
-     * @param {number} chunkIndex - Index of the chunk to start from
+     * Start playback of a specific chunk.
+     * Waits for the audio to be ready, unmutes, and handles autoplay blocking.
+     * @param chunkIndex - The chunk index to play.
      */
-    _startChunkPlayback(chunkIndex) {
+    _startChunkPlayback(chunkIndex: number): void {
         const audioEl = this._getAudioElement(chunkIndex);
         if (!audioEl) return;
         audioEl.currentTime = 0;
 
-        // Mark card as playing immediately (same as _playChunk)
         this._setCardPlaying(chunkIndex, true);
 
         const playWhenReady = () => {
@@ -222,8 +305,8 @@ export class KokoroPlayer {
             audioEl.removeEventListener('canplaythrough', playWhenReady);
             audioEl.removeEventListener('canplay', playWhenReady);
             audioEl.play().then(() => {
-                // Success - audio is now playing
-            }).catch((err) => {
+                // Success
+            }).catch((err: any) => {
                 console.warn('play() failed:', err.name, err.message);
                 if (err.name === 'NotAllowedError') {
                     this._handleAutoplayBlocked(audioEl, chunkIndex);
@@ -236,7 +319,6 @@ export class KokoroPlayer {
         audioEl.addEventListener('canplay', playWhenReady, { once: true });
         audioEl.addEventListener('canplaythrough', playWhenReady, { once: true });
 
-        // Timeout fallback for mobile browsers
         setTimeout(() => {
             if (audioEl.muted) {
                 audioEl.muted = false;
@@ -246,102 +328,83 @@ export class KokoroPlayer {
         }, 3000);
     }
 
-    // ─── Scroll Helpers ──────────────────────────────────────────────
-
     /**
-     * Scroll the container so the specified chunk card is visible in the viewport.
-     * Uses a proportional scroll position based on the chunk's index relative to
-     * the total number of chunks, falling back to scrollIntoView if that fails.
-     * @param {number} index - Chunk index to scroll to
+     * Scroll the chunk container to bring the target chunk into view.
+     * Uses proportional scrolling if the card element is not yet rendered.
+     * @param index - The chunk index to scroll to.
      */
-    _scrollToChunk(index) {
+    _scrollToChunk(index: number): void {
         const container = this._getContainer();
         if (!container) return;
 
         const totalChunks = this.chunks.length;
         if (totalChunks === 0) return;
 
-        // Calculate proportional scroll position (0.0 to 1.0)
-        const ratio = index / (totalChunks - 1 || 1);
-
-        // Target element for scrolling
         const targetCard = container.querySelector(`[data-chunk="${index}"]`);
 
         if (targetCard) {
-            // Try scrollIntoView first (smooth, browser-optimized)
-            targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            (targetCard as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
-            // Fallback: set scroll position proportionally
             const maxScroll = container.scrollHeight - container.clientHeight;
+            const ratio = index / (totalChunks - 1 || 1);
             container.scrollTop = Math.round(maxScroll * ratio);
         }
     }
 
     /**
-     * Scroll the source-editor textarea to selection so the text region at the given offset
-     * and length is visible in the viewport.
-     * Uses proportional scroll position based on the character offset relative
-     * to the total text length, with smooth scrolling behavior.
-     * @param {number} offset - Character offset of the text region
-     * @param {number} length - Length of the text region
-     */    
-    scrollToSelection(textarea) {
+     * Scroll the textarea to keep the current selection visible.
+     * Uses a mirror div technique to calculate the correct scroll position.
+     * @param textarea - The HTMLTextAreaElement to scroll.
+     */
+    scrollToSelection(textarea: HTMLTextAreaElement): void {
         const selectionStart = textarea.selectionStart;
         const style = window.getComputedStyle(textarea);
 
-        // 1. Create a mirror div
         const mirror = document.createElement('div');
-        const textareaStyles = [
+        const textareaStyles: (keyof CSSStyleDeclaration)[] = [
             'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing',
             'textTransform', 'wordSpacing', 'textIndent', 'whiteSpace', 'wordBreak',
             'paddingLeft', 'paddingRight', 'paddingTop', 'paddingBottom',
-            'borderLeftWidth', 'borderRightWidth', 'lineHeight', 'width'
+            'borderLeftWidth', 'borderRightWidth', 'lineHeight', 'width',
         ];
 
-        // 2. Copy textarea styles to the mirror
         textareaStyles.forEach(prop => {
             mirror.style[prop] = style[prop];
         });
 
-        // Critical styling for accuracy
         mirror.style.position = 'absolute';
         mirror.style.visibility = 'hidden';
         mirror.style.whiteSpace = 'pre-wrap';
         mirror.style.wordWrap = 'break-word';
-        mirror.style.overflowY = 'scroll'; // Match textarea scrollbar width
+        mirror.style.overflowY = 'scroll';
 
-        // 3. Fill mirror with text up to selection and add a marker
         const textBefore = textarea.value.substring(0, selectionStart);
         mirror.textContent = textBefore;
-        
+
         const marker = document.createElement('span');
         marker.textContent = textarea.value.substring(selectionStart, selectionStart + 1) || '.';
         mirror.appendChild(marker);
 
-        // 4. Calculate position and scroll
         document.body.appendChild(mirror);
         const markerTop = marker.offsetTop;
         const textareaHeight = textarea.clientHeight;
-        
-        // Center the selection vertically in the textarea
+
         textarea.scrollTop = markerTop - (textareaHeight / 2);
 
-        // Clean up
         document.body.removeChild(mirror);
     }
 
-    // ─── Playback Helpers ────────────────────────────────────────────
-
-    _playChunk(index) {
+    /**
+     * Play a specific chunk by index.
+     * Scrolls to the chunk, sets playing state, and handles autoplay blocking.
+     * @param index - The chunk index to play.
+     */
+    _playChunk(index: number): void {
         const audioEl = this._getAudioElement(index);
         if (!audioEl) return;
         audioEl.currentTime = 0;
 
-        // Scroll the playing card into view
         this._scrollToChunk(index);
-
-        // Mark card as playing immediately when playback is initiated
-        // (the 'play' event doesn't fire reliably on muted audio elements)
         this._setCardPlaying(index, true);
         this._setUIState(true);
 
@@ -350,8 +413,8 @@ export class KokoroPlayer {
             audioEl.removeEventListener('canplaythrough', playWhenReady);
             audioEl.removeEventListener('canplay', playWhenReady);
             audioEl.play().then(() => {
-                // Success - audio is now playing
-            }).catch((err) => {
+                // Success
+            }).catch((err: any) => {
                 console.warn('play() failed:', err.name, err.message);
                 if (err.name === 'NotAllowedError') {
                     this._handleAutoplayBlocked(audioEl, index);
@@ -364,13 +427,12 @@ export class KokoroPlayer {
         audioEl.addEventListener('canplay', playWhenReady, { once: true });
         audioEl.addEventListener('canplaythrough', playWhenReady, { once: true });
 
-        // Timeout fallback for mobile browsers
         setTimeout(() => {
             if (audioEl.muted) {
                 audioEl.muted = false;
                 audioEl.removeEventListener('canplay', playWhenReady);
                 audioEl.removeEventListener('canplaythrough', playWhenReady);
-                audioEl.play().catch((err) => {
+                audioEl.play().catch((err: any) => {
                     if (err.name === 'NotAllowedError') {
                         this._handleAutoplayBlocked(audioEl, index);
                     }
@@ -379,7 +441,13 @@ export class KokoroPlayer {
         }, 2000);
     }
 
-    _handleAutoplayBlocked(audioEl, index) {
+    /**
+     * Handle autoplay policy blocking by showing a tap-to-play indicator.
+     * The indicator auto-removes after 5 seconds.
+     * @param audioEl - The blocked HTMLAudioElement.
+     * @param index - The chunk index.
+     */
+    _handleAutoplayBlocked(audioEl: HTMLAudioElement, index: number): void {
         console.warn('Autoplay was blocked. User interaction required.');
         const card = this._getCard(index);
         if (!card) return;
@@ -396,36 +464,41 @@ export class KokoroPlayer {
         }, 5000);
     }
 
-    // ─── Internal Callbacks ──────────────────────────────────────────
-
-    _onChunkPlay(index) {
-        //debugLog(`onChunkPlay(): index=${index}`);
-        // Called when a chunk starts playing (via play event or fallback)
-        // Always update the playing state to ensure highlighting works
+    /**
+     * Handle the play event for a chunk.
+     * Sets the card as playing and updates the UI state.
+     * @param index - The chunk index that started playing.
+     */
+    _onChunkPlay(index: number): void {
         this._setCardPlaying(index, true);
         this._setUIState(true);
     }
 
-    _onChunkEnded(index) {
-        //debugLog(`onChunkEnded(): index=${index}: isSpeaking=${this.isSpeaking}`);
+    /**
+     * Handle the ended event for a chunk.
+     * Advances to the next chunk or stops playback if all chunks are done.
+     * On mobile, shows a "Tap to play" indicator instead of auto-advancing.
+     * @param index - The chunk index that ended.
+     */
+    _onChunkEnded(index: number): void {
         this._setCardPlaying(index, false);
         const nextIdx = index + 1;
-        if ((nextIdx < this.chunks.length) && this.isSpeaking) {
+        if (nextIdx < this.chunks.length && this.isSpeaking) {
             this._setCardActive(index, false);
             this._setCardActive(nextIdx, true);
             this.currentChunkIndex = nextIdx;
-            
+
             if (this.isMobile) {
                 const nextCard = this._getCard(nextIdx);
                 if (nextCard) {
                     const existing = nextCard.querySelector('.mobile-play-indicator');
                     if (existing) existing.remove();
-                    
+
                     const indicator = document.createElement('div');
                     indicator.className = 'mobile-play-indicator text-xs text-blue-600 dark:text-blue-400 mt-2 text-center';
                     indicator.textContent = '▶ Tap to play';
                     nextCard.appendChild(indicator);
-                    
+
                     setTimeout(() => {
                         if (indicator.parentNode) indicator.remove();
                     }, 5000);
@@ -441,30 +514,39 @@ export class KokoroPlayer {
             this.currentChunkIndex = -1;
             this._setUIState(false);
 
-            this.onPlayOverCallback();
+            this.onPlayOverCallback?.();
         }
     }
 
-    // ─── Status Helpers ──────────────────────────────────────────────
-
-    _setStatusState(newStatus, statusMsg)
-    {
-        if (this.status != newStatus)
-        {
+    /**
+     * Update the player status and display message if the status has changed.
+     * @param newStatus - The new status string.
+     * @param statusMsg - The message to display.
+     */
+    _setStatusState(newStatus: string, statusMsg: string): void {
+        if (this.status !== newStatus) {
             this.status = newStatus;
             this._setStatusMsg(statusMsg);
             this.statusCallback(statusMsg);
         }
     }
 
-    _setStatusMsg(message) {
+    /**
+     * Update the status message element in the DOM.
+     * @param message - The message to display.
+     */
+    _setStatusMsg(message: string): void {
         const statusElement = document.getElementById('status');
         if (statusElement) {
             statusElement.textContent = message;
         }
     }
 
-    _setError(error) {
+    /**
+     * Display an error message in the status element.
+     * @param error - The error message to display.
+     */
+    _setError(error: string): void {
         const statusEl = document.getElementById('status');
         if (statusEl) {
             statusEl.textContent = `Error: ${error}`;
@@ -472,7 +554,12 @@ export class KokoroPlayer {
         }
     }
 
-    _setCardActive(index, active) {
+    /**
+     * Toggle the active state of a chunk card.
+     * @param index - The chunk index.
+     * @param active - Whether the card should be marked as active.
+     */
+    _setCardActive(index: number, active: boolean): void {
         const card = this._getCard(index);
         if (card) {
             card.classList.toggle('active', active);
@@ -480,11 +567,11 @@ export class KokoroPlayer {
     }
 
     /**
-     * Set the playing state on a chunk card to visually indicate active playback.
-     * @param {number} index - Chunk index
-     * @param {boolean} playing - Whether the card is currently playing
+     * Toggle the playing state of a chunk card.
+     * @param index - The chunk index.
+     * @param playing - Whether the card should be marked as playing.
      */
-    _setCardPlaying(index, playing) {
+    _setCardPlaying(index: number, playing: boolean): void {
         const card = this._getCard(index);
         if (!card) {
             console.error(`_setCardPlaying(): card not found for index=${index}!`);
@@ -494,33 +581,42 @@ export class KokoroPlayer {
     }
 
     /**
-     * Check if a chunk card is currently playing
-     * @param {number} index - Chunk index
-     * @returns {boolean}
+     * Check if a chunk card is currently marked as playing.
+     * @param index - The chunk index.
+     * @returns True if the card has the 'playing' class.
      */
-    _isCardPlaying(index) {
+    _isCardPlaying(index: number): boolean {
         const card = this._getCard(index);
         return card ? card.classList.contains('playing') : false;
     }
 
-    _getUIState()
-    {
+    /**
+     * Get the current UI speaking state.
+     * @returns True if the player is currently speaking.
+     */
+    _getUIState(): boolean {
         return this.isSpeaking;
     }
 
-    _setUIState(isSpeaking) {
-        if (this.isSpeaking != isSpeaking)
-        {
+    /**
+     * Update the UI speaking state and notify the callback if changed.
+     * @param isSpeaking - The new speaking state.
+     */
+    _setUIState(isSpeaking: boolean): void {
+        if (this.isSpeaking !== isSpeaking) {
             this.isSpeaking = isSpeaking;
-            //debugLog(`_setUIState(): isSpeaking=${isSpeaking}`);
             if (this.uiStateCallback) {
                 this.uiStateCallback(isSpeaking);
             }
         }
     }
 
-    _updatePlayButton(index, isPlaying)
-    {
-        this.uiStateCallback(isPlaying);
+    /**
+     * Update the play button state via the UI state callback.
+     * @param _index - The chunk index (unused).
+     * @param isPlaying - Whether the audio is currently playing.
+     */
+    _updatePlayButton(_index: number, isPlaying: boolean): void {
+        this.uiStateCallback?.(isPlaying);
     }
 }

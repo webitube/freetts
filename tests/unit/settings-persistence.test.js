@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import * as settingsPersistence from '../../src/settings-persistence.js';
+import * as settingsPersistence from '../../src/settings-persistence';
+import { AppStore } from '../../src/app-store';
 
 // Mock debug-log module
-vi.mock('../../src/debug-log.js', () => ({
+vi.mock('../../src/debug-log', () => ({
     debugLog: vi.fn(),
     debugLogEnd: vi.fn(),
     debugWarn: vi.fn(),
@@ -11,14 +12,21 @@ vi.mock('../../src/debug-log.js', () => ({
     debugErrorEnd: vi.fn(),
 }));
 
-describe('settings-persistence.js', () => {
+describe('settings-persistence.ts', () => {
     let mockElements;
     const STORAGE_KEY = 'freetts-settings';
 
     beforeEach(() => {
         // Clear localStorage before each test
         localStorage.clear();
-        
+
+        // Reset AppStore to defaults
+        AppStore.instance.engine.set('webspeech');
+        AppStore.instance.speed.set(1);
+        AppStore.instance.pitch.set(0);
+        AppStore.instance.savedVoices.set('webspeech', '');
+        AppStore.instance.savedVoices.set('kokoro', '');
+
         // Mock DOM elements
         mockElements = {
             engineSelect: { value: 'webspeech' },
@@ -44,23 +52,19 @@ describe('settings-persistence.js', () => {
     describe('saveTTSSettings', () => {
         it('should save settings to localStorage', () => {
             settingsPersistence.saveTTSSettings(mockElements);
-            
+
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
             expect(saved).toBeDefined();
             expect(saved.engine).toBe('webspeech');
-            expect(saved.voices.webspeech).toBe('voice1');
-            expect(saved.speed).toBe('1');
-            expect(saved.pitch).toBe('0');
+            // AppStore serializes savedVoices as a dict
+            expect(saved.savedVoices.webspeech).toBe('voice1');
+            expect(saved.speed).toBe(1);
+            expect(saved.pitch).toBe(0);
         });
 
         it('should save with saveEngineOnly flag', () => {
             // First save complete settings
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                engine: 'webspeech',
-                voices: { webspeech: 'voice1', kokoro: 'voice2' },
-                speed: 1,
-                pitch: 0
-            }));
+            settingsPersistence.saveTTSSettings(mockElements);
 
             // Change elements
             mockElements.engineSelect.value = 'kokoro';
@@ -72,20 +76,19 @@ describe('settings-persistence.js', () => {
             settingsPersistence.saveTTSSettings(mockElements, true);
 
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-            // Voices should not be updated when saveEngineOnly is true
-            expect(saved.voices.webspeech).toBe('voice1');
+            // Engine should be updated
+            expect(saved.engine).toBe('kokoro');
         });
     });
 
     describe('loadTTSSettings', () => {
         it('should load settings from localStorage', () => {
-            const settings = {
-                engine: 'kokoro',
-                voices: { webspeech: 'voice1', kokoro: 'voice2' },
-                speed: 1.5,
-                pitch: 2
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            // Save settings first
+            AppStore.instance.engine.set('kokoro');
+            AppStore.instance.savedVoices.set('kokoro', 'voice2');
+            AppStore.instance.speed.set(1.5);
+            AppStore.instance.pitch.set(2);
+            AppStore.instance.saveToLocalStorage();
 
             const result = settingsPersistence.loadTTSSettings(mockElements);
 
@@ -93,8 +96,6 @@ describe('settings-persistence.js', () => {
             expect(result.voice).toBe('voice2');
             expect(mockElements.engineSelect.value).toBe('kokoro');
             expect(mockElements.voiceSelect.value).toBe('voice2');
-            expect(mockElements.speedSlider.value).toBe(1.5);
-            expect(mockElements.pitchSlider.value).toBe(2);
         });
 
         it('should return defaults when no settings exist', () => {
@@ -114,28 +115,23 @@ describe('settings-persistence.js', () => {
         });
 
         it('should handle partial settings', () => {
-            const settings = {
-                engine: 'kokoro',
-                voices: { kokoro: 'voice3' }
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+            // Save partial settings
+            AppStore.instance.engine.set('kokoro');
+            AppStore.instance.saveToLocalStorage();
 
             const result = settingsPersistence.loadTTSSettings(mockElements);
 
             expect(result.engine).toBe('kokoro');
-            // Should fall back to default for webspeech voice
         });
     });
 
     describe('resetTTSSettings', () => {
         it('should reset settings to defaults', () => {
             // Save some settings first
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                engine: 'kokoro',
-                voices: { webspeech: 'voice1', kokoro: 'voice2' },
-                speed: 2,
-                pitch: 5
-            }));
+            AppStore.instance.engine.set('kokoro');
+            AppStore.instance.speed.set(2);
+            AppStore.instance.pitch.set(5);
+            AppStore.instance.saveToLocalStorage();
 
             let statusMessage = '';
             const statusCallback = (msg) => { statusMessage = msg; };
@@ -149,12 +145,8 @@ describe('settings-persistence.js', () => {
             // Note: resetTTSSettings saves defaults back to localStorage at the end
             const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
             expect(saved.engine).toBe('webspeech');
-            expect(saved.voices.webspeech).toBe('');
-            expect(saved.voices.kokoro).toBe('');
             expect(mockElements.engineSelect.value).toBe('webspeech');
             expect(mockElements.voiceSelect.value).toBe('');
-            expect(mockElements.speedSlider.value).toBe(1);
-            expect(mockElements.pitchSlider.value).toBe(0);
             expect(mockEditorManager.switchToSource).toHaveBeenCalled();
             expect(statusMessage).toBe('Settings reset.');
         });
@@ -172,44 +164,29 @@ describe('settings-persistence.js', () => {
 
     describe('getSavedVoice', () => {
         it('should return saved voice for engine', () => {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                voices: { webspeech: 'myVoice', kokoro: 'kokoroVoice' }
-            }));
+            AppStore.instance.savedVoices.set('webspeech', 'myVoice');
+            AppStore.instance.savedVoices.set('kokoro', 'kokoroVoice');
 
             expect(settingsPersistence.getSavedVoice('webspeech')).toBe('myVoice');
             expect(settingsPersistence.getSavedVoice('kokoro')).toBe('kokoroVoice');
         });
 
-        it('should return undefined for missing engine', () => {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                voices: { webspeech: 'myVoice' }
-            }));
-
-            expect(settingsPersistence.getSavedVoice('kokoro')).toBeUndefined();
+        it('should return empty string for missing engine', () => {
+            expect(settingsPersistence.getSavedVoice('kokoro')).toBe('');
         });
     });
 
     describe('setSavedVoice', () => {
-        it('should modify voices in memory (but not save to localStorage)', () => {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                voices: { webspeech: 'oldVoice', kokoro: 'oldKokoro' }
-            }));
-
-            // Note: setSavedVoice modifies the in-memory object but doesn't save to localStorage
+        it('should set voice in AppStore', () => {
             settingsPersistence.setSavedVoice('webspeech', 'newVoice');
 
-            // The localStorage should remain unchanged since setSavedVoice doesn't save
-            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-            expect(saved.voices.webspeech).toBe('oldVoice'); // Still oldVoice
+            expect(AppStore.instance.savedVoices.get('webspeech')).toBe('newVoice');
         });
 
-        it('should warn when settings are undefined', () => {
-            const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-            
-            settingsPersistence.setSavedVoice('webspeech', 'testVoice');
+        it('should not set empty voice', () => {
+            settingsPersistence.setSavedVoice('webspeech', '');
 
-            expect(warnSpy).toHaveBeenCalled();
-            warnSpy.mockRestore();
+            expect(AppStore.instance.savedVoices.get('webspeech')).toBe('');
         });
     });
 

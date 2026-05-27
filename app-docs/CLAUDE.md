@@ -1,78 +1,95 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
+
+## Project Overview
+
+FreeTTS is a **TypeScript** single-page application (no frontend framework) that combines a Markdown editor with integrated Text-to-Speech. The codebase uses Vite for building, Milkdown for the WYSIWYG editor, and a reactive state management system (`AppStore`) powered by ReactiveTypescript.
 
 ## Commands
 
 ```bash
-# Start dev server
-npx vite
+# Start dev server (Vite with HMR)
+npm run dev
 
 # Build for production (outputs to dist/)
-npx vite build
+npm run build
 
 # Preview production build
-npx vite preview
+npm run preview
+
+# Run all tests (Vitest)
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
 ```
 
 The base path in `vite.config.js` is set to `/freetts/` for GitHub Pages deployment. Change this if deploying elsewhere (e.g., `/dist/` or `/` for a custom domain).
 
 ## Architecture
 
-FreeTTS is a vanilla JavaScript single-page app with no frontend framework. Application code lives in 16 modular files in `src/`:
+FreeTTS is a TypeScript single-page app with no frontend framework. Application code lives in **17 modular files** in `src/` (16 `.ts` files + 1 `.js` Web Worker):
+
+### State Management (New)
+
+- **`src/app-store.ts`** — `AppStore` class: Centralized reactive state singleton using ReactiveTypescript. Manages all application state: TTS settings (engine, speed, pitch, saved voices), playback state (isSpeaking, currentChunkIndex), editor state (isSourceMode, currentMarkdown), UI state (theme, debugMode, statusMessage, activeDevice), and voice state. Provides `saveToLocalStorage()`, `loadFromLocalStorage()`, `resetToDefaults()`, and `getSavedVoice()` methods. Enums: `EngineEnum`, `StatusEnum`, `ThemeEnum`.
 
 ### Entry Point
 
-- **`src/app.js`** (347 lines) — Main entry point: initializes all modules (`EditorManager`, `TTSController`, `KokoroPlayer`), handles DOMContentLoaded, sets up callbacks for status updates and speaking state sync, manages editor mode switching, TTS engine selection, voice loading, and keyboard shortcuts (Ctrl+Enter)
+- **`src/app.ts`** — Main entry point: initializes all modules (`EditorManager`, `TTSController`, `KokoroPlayer`), handles DOMContentLoaded, sets up callbacks for status updates and speaking state sync, manages editor mode switching, TTS engine selection, voice loading, keyboard shortcuts (Ctrl+Enter), and Kokoro chunk highlighting sync. Reads initial content from `DefaultText.md`.
 
 ### Editor Module
 
-- **`src/editor-manager.js`** (100 lines) — `EditorManager` class: Milkdown editor initialization, lazy loading, mode switching between Reveal Codes (textarea) and Visual (WYSIWYG), markdown content synchronization
+- **`src/editor-manager.ts`** — `EditorManager` class: Milkdown editor initialization, lazy loading, mode switching between Reveal Codes (textarea) and Visual (WYSIWYG), markdown content synchronization via `AppStore.currentMarkdown`.
 
 ### TTS Controller Module
 
-- **`src/tts-controller.js`** (187 lines) — `TTSController` class: main TTS playback logic for both Web Speech API and Kokoro engines, selection-aware playback, word-level highlighting sync, pitch conversion (non-Safari: `1 + pitch/12`), state management (`isSpeaking`, `activeEngine`, `kokoroTextToSpeak`)
+- **`src/tts-controller.ts`** — `TTSController` class: main TTS playback logic for both Web Speech API and Kokoro engines, selection-aware playback, word-level highlighting sync, pitch conversion (non-Safari: `1 + pitch/12`), state management via `AppStore` (`isSpeaking`, `engine`).
 
 ### Kokoro TTS Module
 
-- **`src/kokoro-player.js`** (530 lines) — `KokoroPlayer` class: chunk-based audio playback orchestration, mobile autoplay policy handling (muted start + tap-to-play indicators), incremental card rendering and DOM updates, merged audio download, scroll synchronization, active chunk highlighting
-- **`src/kokoro-audio-player.js`** (97 lines) — `AudioPlayer` class: chunk audio element lifecycle management, playback control, error handling
-- **`src/kokoro-chunk-manager.js`** (54 lines) — `ChunkManager` class: chunk state delegation and mobile browser detection
-- **`src/kokoro-chunk-renderer.js`** (140 lines) — `ChunkRenderer` class: chunk card DOM creation, seek-by-click handling, audio element creation with WAV format metadata for mobile compatibility
-- **`src/kokoro-ui-manager.js`** (113 lines) — `UIManager` class: status display, error messages, chunk card management, HTML escaping for XSS prevention
-- **`src/kokoro-worker-communication.js`** (177 lines) — `WorkerCommunication` class: Web Worker initialization, WebGPU detection, message handling (init, stream chunks, completion, errors), device selection (WebGPU `fp32` vs WASM `q8`)
+- **`src/kokoro-player.ts`** — `KokoroPlayer` class: chunk-based audio playback orchestration, mobile autoplay policy handling (muted start + tap-to-play indicators), incremental card rendering and DOM updates, merged audio download, scroll synchronization, active chunk highlighting. Composed of `WorkerCommunication`, `AudioPlayer`, `ChunkManager`, and `ChunkRenderer` sub-modules.
+- **`src/kokoro-audio-player.ts`** — `AudioPlayer` class: chunk audio element lifecycle management, playback control, error handling.
+- **`src/kokoro-chunk-manager.ts`** — `ChunkManager` class: chunk state delegation and mobile browser detection.
+- **`src/kokoro-chunk-renderer.ts`** — `ChunkRenderer` class: chunk card DOM creation, seek-by-click handling, audio element creation with WAV format metadata for mobile compatibility.
+- **`src/kokoro-worker-communication.ts`** — `WorkerCommunication` class: Web Worker initialization, WebGPU detection, message handling (init, stream chunks, completion, errors), device selection (WebGPU `fp32` vs WASM `q8`).
 
 ### Web Worker
 
-- **`src/tts-worker.js`** (89 lines) — Web Worker that runs `kokoro-js` (ONNX Runtime) with `TextSplitterStream` for streaming TTS generation, handles device backend selection, chunk streaming, and merged audio assembly
+- **`src/tts-worker.js`** — Web Worker (remains `.js` for Worker compatibility) that runs `kokoro-js` (ONNX Runtime) with `TextSplitterStream` for streaming TTS generation, handles device backend selection, chunk streaming, and merged audio assembly.
 
 ### Shared Utilities & Persistence
 
-- **`src/settings-persistence.js`** (202 lines) — localStorage persistence module: `saveTTSSettings()`, `loadTTSSettings()`, `resetTTSSettings()`, `getSavedVoice()`, `setSavedVoice()`, `hasSettings()`, `saveIfNoSettings()` — persists engine, voice, speed, and pitch under key `freetts-settings` with backward compatibility for old voice index format
-- **`src/voice-manager.js`** (169 lines) — Voice loading and management: `loadWebSpeechVoices()` (async, handles `voiceschanged` event with 5s timeout), `loadKokoroVoices()` (syncs from worker), `populateVoiceSelect()` (UI population with voice selection restoration), `updatePitchWarning()` — voice name resolution with backward compatibility
-- **`src/ui-manager.js`** (104 lines) — UI initialization functions: `initThemeToggle()` (dark/light mode persistence), `initHelpModal()` (help modal controls), `initClipboardAndDownload()` (copy and download .md), `setUIState()` (play/stop button sync), `initLinkInterceptor()` (visual mode link handling)
-- **`src/highlighting-utils.js`** (72 lines) — Text processing utilities: `highlightVisualWord()` (TreeWalker-based DOM text highlighting), `getVisualCursorInfo()` (cursor position and text extraction), `cleanMarkdown()` (regex-based syntax stripping: `#*_~` backticks, link syntax, pipes)
-- **`src/debug-log.js`** (122 lines) — Debug logging utilities: `debugLog()`, `debugLogEnd()`, `debugWarn()`, `debugWarnEnd()`, `debugError()`, `debugErrorEnd()`, `debugLogArray()`, `repeatChar()` — formatted console output with optional timers
-- **`src/global-switches.js`** (9 lines) — Global state: `debugMode` flag with `getDebugMode()`/`setDebugMode()` accessors
+- **`src/settings-persistence.ts`** — Thin wrapper around `AppStore` for backward compatibility: `saveTTSSettings()`, `loadTTSSettings()`, `resetTTSSettings()`, `getSavedVoice()`, `setSavedVoice()`, `hasSettings()`, `saveIfNoSettings()`. All persistence logic now lives in `AppStore.saveToLocalStorage()` / `loadFromLocalStorage()`.
+- **`src/voice-manager.ts`** — Voice loading and management: `loadWebSpeechVoices()` (async, handles `voiceschanged` event with 5s timeout), `loadKokoroVoices()` (syncs from worker), `populateVoiceSelect()` (UI population with voice selection restoration), `updatePitchWarning()`.
+- **`src/ui-manager.ts`** — UI initialization functions: `initThemeToggle()` (dark/light mode persistence via AppStore), `initHelpModal()` (help modal controls), `initClipboardAndDownload()` (copy and download .md), `setUIState()` (play/stop button sync), `initLinkInterceptor()` (visual mode link handling).
+- **`src/app-utils.ts`** — Helper functions: `updateStatusMsg()`, `resetStatusAfterDelay()`, `toggleHidden()`, `capitalizeMsg()`, `getSelectedEngine()`, `updateSelectedEngine()`.
+- **`src/highlighting-utils.ts`** — Text processing utilities: `highlightVisualWord()` (TreeWalker-based DOM text highlighting), `getVisualCursorInfo()` (cursor position and text extraction), `cleanMarkdown()` (regex-based syntax stripping: `#*_~` backticks, link syntax, pipes).
+- **`src/debug-log.ts`** — Debug logging utilities: `debugLog()`, `debugLogEnd()`, `debugWarn()`, `debugWarnEnd()`, `debugError()`, `debugErrorEnd()`, `debugLogArray()`, `repeatChar()` — formatted console output with optional timers. Conditional on `AppStore.debugMode`.
+- **`src/global-switches.ts`** — Global state: `debugMode` flag with `getDebugMode()`/`setDebugMode()` accessors, backed by `AppStore.debugMode`.
 
 ### Editor Modes
 
-The app has two editing modes toggled via tab buttons, managed by `EditorManager` in `src/editor-manager.js`:
+The app has two editing modes toggled via tab buttons, managed by `EditorManager` in `src/editor-manager.ts`:
 
 1. **Reveal Codes** — a `<textarea>` showing raw Markdown with syntax visible
 2. **Visual** — a [Milkdown](https://milkdown.dev/) WYSIWYG editor instance (bundled via npm)
 
-Mode switching syncs content between the textarea and Milkdown via its `replaceAll` command. Milkdown is initialized lazily on first switch to Visual mode. The app requires `npx vite` to run (ES module imports, Web Worker, ONNX Runtime).
+Mode switching syncs content between the textarea and Milkdown via its `replaceAll` command. Milkdown is initialized lazily on first switch to Visual mode. Content is synced through `AppStore.currentMarkdown`. The app requires `npx vite` to run (ES module imports, Web Worker, ONNX Runtime).
 
 ### TTS Engines
 
-The app supports two TTS engines, selected via dropdown. TTS logic is managed by `TTSController` in `src/tts-controller.js`:
+The app supports two TTS engines, selected via dropdown. TTS logic is managed by `TTSController` in `src/tts-controller.ts`:
 
 #### 1. Web Speech API (`SpeechSynthesis`)
-- Markdown syntax is stripped before speaking using `cleanMarkdown()` regex (removes `#`, `*`, `_`, `~`, `` ` ``, link syntax `[]()`, and `|`) — defined in `src/highlighting-utils.js`
+- Markdown syntax is stripped before speaking using `cleanMarkdown()` regex (removes `#`, `*`, `_`, `~`, `` ` ``, link syntax `[]()`, and `|`) — defined in `src/highlighting-utils.ts`
 - Word-level highlighting uses `SpeechSynthesisUtterance` boundary events (`e.name === 'word'`)
 - In Reveal Codes mode, word highlighting is calculated by character offsets on the textarea (`setSelectionRange`)
-- In Visual mode, a `TreeWalker` traverses DOM text nodes to find and highlight words via `highlightVisualWord()` from `src/highlighting-utils.js`
+- In Visual mode, a `TreeWalker` traverses DOM text nodes to find and highlight words via `highlightVisualWord()` from `src/highlighting-utils.ts`
 - Pitch conversion: `1 + parseInt(pitchSlider.value) / 12` (non-Safari); Safari omits pitch entirely
 - TTS can start from a cursor position or text selection
 - **Pitch slider is available on all platforms and engines**, range -2 to +2, step 0.5. Safari Web Speech omits pitch (`if (!isSafari)`).
@@ -87,7 +104,7 @@ The app supports two TTS engines, selected via dropdown. TTS logic is managed by
 - **First-use download**: A stable internet connection is required for the initial model download; subsequent uses are instant from cache
 - Text is split into chunks using `TextSplitterStream` and streamed back to the main thread as WAV audio blobs
 - **Device selection**: WebGPU uses `fp32` dtype, WASM uses `q8` dtype
-- **KokoroPlayer** (`src/kokoro-player.js`) renders each chunk as an independent `<audio>` element with controls
+- **KokoroPlayer** (`src/kokoro-player.ts`) renders each chunk as an independent `<audio>` element with controls
   - Cards append incrementally to the DOM via `_appendChunkCard()` — existing playback is never interrupted
   - Active chunk is highlighted with a blue border and blue background; styling updates are targeted via `_setCardActive()` (not full DOM rebuilds)
   - Auto-advance is driven by the `ended` event on each audio element
@@ -97,7 +114,7 @@ The app supports two TTS engines, selected via dropdown. TTS logic is managed by
   - Fallback mechanisms: `canplay` event listener (fires earlier than `canplaythrough`), 2-second timeout fallback, retry logic with 100ms delay on play failures
   - Graceful error handling for `NotAllowedError` (autoplay blocked) with `_handleAutoplayBlocked()` method
   - Mobile behavior: shows "Tap to play" indicator on auto-advance; desktop auto-plays with 300ms delay
-- Chunk-by-chunk text highlighting is synced via `_onChunkPlay` callback (set in `src/app.js`)
+- Chunk-by-chunk text highlighting is synced via `_onChunkPlay` callback (set in `src/app.ts`)
 
 ### Mobile Browser Autoplay Handling
 
@@ -112,38 +129,58 @@ Mobile browsers (especially iOS Safari) enforce strict autoplay policies that bl
 5. **Timeout fallback**: 2-second timeout for cases where events don't fire
 6. **Retry logic**: 100ms delay retry on play failures (except `NotAllowedError` which shows UI indicator)
 
-### State
+### Reactive State (AppStore)
 
-Managed via class instances and module-level variables across the modular source files — no framework state management. Key state:
+All application state is now managed by the `AppStore` singleton (`src/app-store.ts`), powered by ReactiveTypescript:
 
-**`src/app.js` (main):**
-- `editorManager` (EditorManager instance) — manages `currentMarkdown`, `milkdownEditor`, `isSourceMode`
-- `kokoroPlayer` (KokoroPlayer instance) — manages audio playback state
-- `ttsController` (TTSController instance) — manages `isSpeaking`, `speechOffsetStart`, `activeEngine` (`'webspeech'` | `'kokoro'`), `kokoroTextToSpeak`, `kokoroStartOffset`
-- `voices` (Web Speech voices array), `isSafari`, `isMobile` (browser detection)
+**TTS Settings:**
+- `engine` (`EngineEnum.WebSpeech` | `EngineEnum.Kokoro`)
+- `speed` (number, default: 1)
+- `pitch` (number, default: 0)
+- `savedVoices` (dictionary: engine → voice name)
 
-**`src/settings-persistence.js`:**
-- `STORAGE_KEY = 'freetts-settings'` — localStorage persistence for engine, voice, speed, pitch
+**Playback State:**
+- `isSpeaking` (boolean)
+- `kokoroStatus` (`StatusEnum`)
+- `currentChunkIndex` (number)
 
-**`src/global-switches.js`:**
-- `debugMode` — global debug flag controlled by `getDebugMode()`/`setDebugMode()`; defaults to `false`
+**Editor State:**
+- `isSourceMode` (boolean)
+- `currentMarkdown` (string)
+
+**UI State:**
+- `theme` (`ThemeEnum.Light` | `ThemeEnum.Dark`)
+- `debugMode` (boolean)
+- `statusMessage` (string)
+- `activeDevice` (string: 'webgpu' | 'wasm')
+
+**Voice State:**
+- `webSpeechVoicesLoaded` / `kokoroVoicesLoaded` (boolean)
+- `webSpeechVoices` (ReactiveList)
+- `kokoroVoices` (ReactiveDictionary)
+
+**Persistence:**
+- `saveToLocalStorage()` / `loadFromLocalStorage()` — full serialization via ReactiveSerializer
+- `resetToDefaults()` — clears localStorage and resets all reactive values
+- `hasSettings()` — check if settings exist
 
 ### Settings Persistence
 
-TTS settings (engine, voice, speed, pitch) are saved to localStorage under key `freetts-settings`. Managed by functions in `src/settings-persistence.js`:
-- `saveTTSSettings()` — persist current settings
-- `loadTTSSettings()` — restore settings from localStorage
-- `resetTTSSettings()` — reset all settings to defaults
-- `getSavedVoice()` — retrieve saved voice index
-- `saveIfNoSettings()` — initial setup helper
-
-Settings are loaded automatically before playback via `TTSController.togglePlayback()`.
+TTS settings (engine, voice, speed, pitch) are saved to localStorage under key `freetts-settings`. The `src/settings-persistence.ts` module provides a thin backward-compatible wrapper around `AppStore`. All persistence logic now lives in `AppStore.saveToLocalStorage()` / `loadFromLocalStorage()`.
 
 ### Styling
 
 - `css/tailwind.min.css` — minified Tailwind (static, not processed)
 - `css/FreeTTSStyles.css` — custom overrides, dark mode transitions, Milkdown editor theming
-- Theme (light/dark) is toggled via a `data-theme` attribute on `<html>` and persisted in `localStorage`. Theme toggle is initialized by `initThemeToggle()` in `src/ui-manager.js`.
+- Theme (light/dark) is toggled via a `dark` class on `<html>` and persisted in `localStorage` through `AppStore.theme`. Theme toggle is initialized by `initThemeToggle()` in `src/ui-manager.ts`.
+
+### Testing
+
+- **Framework:** Vitest 4 with happy-dom
+- **Unit tests:** `tests/unit/` — 10 test files covering individual modules
+- **Integration tests:** `tests/integration/` — 2 test files for cross-module flows
+- **Mocks:** `tests/setup.js` provides mocks for `localStorage`, `speechSynthesis`, and other DOM APIs
+- **Commands:** `npm test`, `npm run test:coverage`, `npm run test:watch`
 
 ### Deployment
 
