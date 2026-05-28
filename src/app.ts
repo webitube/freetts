@@ -330,14 +330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- PLAYBACK TOGGLE ---
     if (elements.btnTts) {
         elements.btnTts.onclick = () => {
-            ttsController.togglePlayback(
-                () => ttsController.stopWebSpeech(),
-                () => ttsController.stopKokoro(),
-                () => loadTTSSettings(elements),
-                (msg: string) => {
-                    updateStatusMsg(elements.ttsStatus, msg, kokoroPlayer.getActiveDevice());
-                },
-            );
+            AppStore.instance.isPlaying.set(!AppStore.instance.isPlaying.get());
         };
     }
 
@@ -345,14 +338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('keydown', (e: KeyboardEvent) => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
-            ttsController.togglePlayback(
-                () => ttsController.stopWebSpeech(),
-                () => ttsController.stopKokoro(),
-                () => loadTTSSettings(elements),
-                (msg: string) => {
-                    updateStatusMsg(elements.ttsStatus, msg, kokoroPlayer.getActiveDevice());
-                },
-            );
+            AppStore.instance.isPlaying.set(!AppStore.instance.isPlaying.get());
         }
     });
 

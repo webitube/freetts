@@ -134,6 +134,10 @@ export class AppStore {
     @reactiveValue()
     public isSpeaking = new ReactiveValue<boolean>(false);
 
+    /** Whether playback is intentionally active (toggled by user). */
+    @reactiveValue()
+    public isPlaying = new ReactiveValue<boolean>(false);
+
     /** Kokoro TTS generation status. */
     @reactiveValue()
     public kokoroStatus = new ReactiveValue<StatusEnum>(DEFAULT_STATUS);

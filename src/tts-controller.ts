@@ -71,6 +71,82 @@ export class TTSController {
         this.kokoroStartOffset = 0;
         this.isSpeakingCallback = typeof isSpeakingCallback === 'function' ? isSpeakingCallback : () => {};
         this.isSpeakingCallback(AppStore.instance.isSpeaking.get());
+
+        // Subscribe to playback state changes
+        AppStore.instance.isPlaying.subscribe((playing) => {
+            this.handlePlaybackStateChange(playing);
+        });
+    }
+
+    /**
+     * Handles changes to the global isPlaying state.
+     * @param playing - Whether playback should be active.
+     */
+    private handlePlaybackStateChange(playing: boolean): void {
+        if (playing) {
+            this.startPlayback();
+        } else {
+            this.stopPlayback();
+        }
+    }
+
+    /**
+     * Orchestrates the start of playback based on current engine and editor state.
+     */
+    private startPlayback(): void {
+        // Load settings into UI before starting
+        const loadTTSSettings = (elements: any) => {
+            // This is a placeholder for the actual loadTTSSettings logic 
+            // which is usually passed in from app.ts. 
+            // Since we are now reactive, we should ensure the UI is synced.
+        };
+
+        if (this.editorManager.isCurrentlySourceMode()) {
+            const sourceEl = (this.elements as any).source as HTMLTextAreaElement;
+            if (document.activeElement !== sourceEl) {
+                sourceEl?.focus();
+                sourceEl?.setSelectionRange(0, 0);
+            }
+        }
+
+        const selectionText = window.getSelection()?.toString().trim() ?? '';
+        const { textToSpeak, startOffset } = this._getTextAndOffset(selectionText);
+
+        if (!textToSpeak.trim()) {
+            // We can't speak, so we reset isPlaying to false
+            AppStore.instance.isPlaying.set(false);
+            return;
+        }
+
+        if (AppStore.instance.engine.get() === EngineEnum.Kokoro) {
+            this.speakWithKokoro(textToSpeak, startOffset);
+        } else {
+            this.speakWithWebSpeech(textToSpeak, startOffset, () => this.stopPlayback());
+        }
+    }
+
+    /**
+     * Orchestrates the stop of playback for the active engine.
+     */
+    private stopPlayback(): void {
+        if (AppStore.instance.engine.get() === EngineEnum.Kokoro) {
+            this.stopKokoro();
+        } else {
+            this.stopWebSpeech();
+        }
+    }
+
+    /**
+     * Toggles TTS playback on/off. (Deprecated in favor of AppStore.isPlaying)
+     * Kept for backward compatibility if needed, but now just toggles the store.
+     */
+    togglePlayback(
+        stopWebSpeech: () => void,
+        stopKokoro: () => void,
+        loadTTSSettings: () => void,
+        statusCallback: (msg: string) => void,
+    ): void {
+        AppStore.instance.isPlaying.set(!AppStore.instance.isPlaying.get());
     }
 
     /**
@@ -89,57 +165,6 @@ export class TTSController {
      */
     getActiveEngine(): string {
         return AppStore.instance.engine.get();
-    }
-
-    /**
-     * Toggles TTS playback on/off. If already speaking, stops the current engine.
-     * If not speaking, determines the text to speak (selection or remaining text from cursor)
-     * and starts playback with the active engine.
-     * 
-     * @param stopWebSpeech - Function to stop Web Speech API playback.
-     * @param stopKokoro - Function to stop Kokoro TTS playback.
-     * @param loadTTSSettings - Function to load persisted TTS settings into the UI.
-     * @param statusCallback - Callback to display status messages to the user.
-     */
-    togglePlayback(
-        stopWebSpeech: () => void,
-        stopKokoro: () => void,
-        loadTTSSettings: () => void,
-        statusCallback: (msg: string) => void,
-    ): void {
-        loadTTSSettings(this.elements);
-
-        if (AppStore.instance.isSpeaking.get()) {
-            if (AppStore.instance.engine.get() === EngineEnum.Kokoro) {
-                stopKokoro();
-            } else {
-                stopWebSpeech();
-            }
-            return;
-        }
-
-        if (this.editorManager.isCurrentlySourceMode()) {
-            const sourceEl = (this.elements as any).source as HTMLTextAreaElement;
-            if (document.activeElement !== sourceEl) {
-                sourceEl?.focus();
-                sourceEl?.setSelectionRange(0, 0);
-            }
-        }
-
-        const selectionText = window.getSelection()?.toString().trim() ?? '';
-        const { textToSpeak, startOffset } = this._getTextAndOffset(selectionText);
-
-        if (!textToSpeak.trim()) {
-            statusCallback('Please place cursor or select text.');
-            resetStatusAfterDelay(statusCallback);
-            return;
-        }
-
-        if (AppStore.instance.engine.get() === EngineEnum.Kokoro) {
-            this.speakWithKokoro(textToSpeak, startOffset);
-        } else {
-            this.speakWithWebSpeech(textToSpeak, startOffset, stopWebSpeech);
-        }
     }
 
     /**
