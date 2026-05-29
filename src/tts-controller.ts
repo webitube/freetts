@@ -3,7 +3,7 @@ import { setUIState as setPlaybackUIState } from './ui-manager';
 import { resetStatusAfterDelay } from './app-utils';
 import { AppStore, EngineEnum } from './app-store';
 import { debugLog } from './debug-log';
-import { ReactEventArgs, type Observer } from '../ReactiveTypescript/src/types.js';
+import { ReactEventArgs } from '../ReactiveTypescript/src/types.js';
 
 
 /**
@@ -76,19 +76,18 @@ export class TTSController {
         this.isSpeakingCallback(AppStore.instance.isSpeaking.get());
 
         // Subscribe to playback state changes
-        AppStore.instance.isPlaying.subscribe((playing) => {
-            this.handlePlaybackStateChange(playing);
+        AppStore.instance.isPlaying.subscribe((args: ReactEventArgs<boolean>) => {
+            const isPlaying = args.data;
+            this.handlePlaybackStateChange(isPlaying);
         });
     }
 
     /**
      * Handles changes to the global isPlaying state.
-     * @param playing - Whether playback should be active.
+     * @param isPlaying - Whether playback should be active.
      */
-    private handlePlaybackStateChange(args: ReactEventArgs<boolean>): void {
-        const playing = args.data;
-        debugLog(`handlePlaybackStateChange(): playing=${playing}`);
-        if (playing) {
+    private handlePlaybackStateChange(isPlaying: boolean): void {
+        if (isPlaying) {
             this.startPlayback();
         } else {
             this.stopPlayback();

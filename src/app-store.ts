@@ -30,13 +30,15 @@ import {
     ReactiveDictionary,
     ReactiveSerializer,
     deserializeStore,
-} from 'reactivetypescript';
+} from '../ReactiveTypescript/src';
 
 import {
     reactiveValue,
     reactiveList,
     reactiveDict,
-} from 'reactivetypescript';
+} from '../ReactiveTypescript/src';
+
+import { jsonIgnore } from '../ReactiveTypescript/src/decorators/reactive';
 
 // --- Enums ---
 
@@ -131,11 +133,11 @@ export class AppStore {
     // --- Playback State ---
 
     /** Whether TTS is currently speaking. */
-    @reactiveValue()
+    @jsonIgnore()
     public isSpeaking = new ReactiveValue<boolean>(false);
 
     /** Whether playback is intentionally active (toggled by user). */
-    @reactiveValue()
+    @jsonIgnore()
     public isPlaying = new ReactiveValue<boolean>(false);
 
     /** Kokoro TTS generation status. */
