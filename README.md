@@ -90,6 +90,12 @@ npm run dev
 # Build for production
 npm run build
 
+# Build for debugging
+npx vite build --minify false
+
+# Preview Local Server
+npx vite preview
+
 # Run tests
 npm test
 
