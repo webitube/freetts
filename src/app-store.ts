@@ -162,10 +162,6 @@ export class AppStore {
     @reactiveValue()
     public theme = new ReactiveValue<ThemeEnum>(DEFAULT_THEME);
 
-    /** Whether debug logging is enabled. */
-    @reactiveValue()
-    public debugMode = new ReactiveValue<boolean>(false);
-
     /** Current status message displayed to the user. */
     @reactiveValue()
     public statusMessage = new ReactiveValue<string>(DEFAULT_STATUS_MESSAGE);
@@ -286,7 +282,6 @@ export class AppStore {
         this.isSpeaking.set(false);
         this.kokoroStatus.set(DEFAULT_STATUS);
         this.currentChunkIndex.set(-1);
-        this.debugMode.set(false);
         this.webSpeechVoicesLoaded.set(false);
         this.kokoroVoicesLoaded.set(false);
         this.kokoroMergedBlob.set(null);

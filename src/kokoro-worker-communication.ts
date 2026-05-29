@@ -111,11 +111,17 @@ export class WorkerCommunication {
     /**
      * Handle incoming messages from the Kokoro Web Worker.
      * Routes messages to the appropriate player methods based on status type.
+     * Ignores stream/complete messages if the player has been explicitly stopped.
      *
      * @param e - The MessageEvent from the worker.
      */
     _handleWorkerMessage(e: MessageEvent): void {
         const { status, chunk, mergedAudio, voices, device, data } = e.data;
+
+        // If the player has been stopped, ignore all generation messages
+        if (this.player.isStopped && (status === 'stream' || status === 'complete')) {
+            return;
+        }
 
         switch (status) {
             case 'device':

@@ -2,6 +2,9 @@ import { cleanMarkdown } from './highlighting-utils';
 import { setUIState as setPlaybackUIState } from './ui-manager';
 import { resetStatusAfterDelay } from './app-utils';
 import { AppStore, EngineEnum } from './app-store';
+import { debugLog } from './debug-log';
+import { ReactEventArgs, type Observer } from '../ReactiveTypescript/src/types.js';
+
 
 /**
  * TTSController handles Text-to-Speech playback logic for both
@@ -82,7 +85,9 @@ export class TTSController {
      * Handles changes to the global isPlaying state.
      * @param playing - Whether playback should be active.
      */
-    private handlePlaybackStateChange(playing: boolean): void {
+    private handlePlaybackStateChange(args: ReactEventArgs<boolean>): void {
+        const playing = args.data;
+        debugLog(`handlePlaybackStateChange(): playing=${playing}`);
         if (playing) {
             this.startPlayback();
         } else {
@@ -115,9 +120,11 @@ export class TTSController {
         if (!textToSpeak.trim()) {
             // We can't speak, so we reset isPlaying to false
             AppStore.instance.isPlaying.set(false);
+            debugLog(`startPlayback(): textToSpeak.Trim() is empty: isPlaying set to false: isPlaying=${AppStore.instance.isPlaying.get()}`);
             return;
         }
 
+        debugLog(`startPlayback(): About to speak with engine=${AppStore.instance.engine.get()}`);
         if (AppStore.instance.engine.get() === EngineEnum.Kokoro) {
             this.speakWithKokoro(textToSpeak, startOffset);
         } else {

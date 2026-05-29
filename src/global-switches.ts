@@ -5,14 +5,14 @@
  * Now backed by AppStore.debugMode reactive value.
  */
 
-import { AppStore } from './app-store';
+let debugMode: boolean = false;
 
 /**
  * Enable or disable debug mode globally
  * @param debug - True to enable debug logging, false to disable
  */
 export function setDebugMode(debug: boolean): void {
-    AppStore.instance.debugMode.set(debug);
+    debugMode = debug;
 }
 
 /**
@@ -20,5 +20,5 @@ export function setDebugMode(debug: boolean): void {
  * @returns Current debug mode state
  */
 export function getDebugMode(): boolean {
-    return AppStore.instance.debugMode.get();
+    return debugMode;
 }

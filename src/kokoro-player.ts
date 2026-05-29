@@ -72,6 +72,9 @@ export class KokoroPlayer {
     /** Whether the player is currently speaking. */
     isSpeaking: boolean = false;
 
+    /** Whether the player has been explicitly stopped (prevents worker messages from restarting playback). Note: This is distinct from AppStore.isStopped */
+    isStopped: boolean = false;
+
     /** Merged WAV Blob of all chunks (for download). */
     mergedBlob: Blob | null = null;
 
@@ -179,6 +182,7 @@ export class KokoroPlayer {
      * @param speed - The playback speed multiplier.
      */
     async play(textToSpeak: string, voice: string, speed: number): Promise<void> {
+        this.isStopped = false;     // Note: This is the Kokoro Player's 'isStopped' and *not* AppStore.isStopped
         this.chunks = [];
         this.currentChunkIndex = -1;
         this.mergedBlob = null;
@@ -202,10 +206,15 @@ export class KokoroPlayer {
     }
 
     /**
-     * Stop all playback: pause audio, clear playing indicators, and reset state.
+     * Stop all playback: pause audio, clear playing indicators, terminate worker, and reset state.
+     * Does NOT clear chunks so the viewport remains intact.
      */
     stop(): void {
+        this.isStopped = true;      // Note: This is the Kokoro Player's 'isStopped' and *not* AppStore.isStopped
         this.audioPlayer.stopAll();
+
+        // Terminate the worker to stop background generation
+        this.workerComm.destroy();
 
         const container = this._getContainer();
         if (container) {
@@ -215,10 +224,8 @@ export class KokoroPlayer {
         }
 
         this.currentChunkIndex = -1;
-        this.mergedBlob = null;
         this.status = 'ready';
         this._setUIState(false);
-        this.renderChunks();
     }
 
     /**
