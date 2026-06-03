@@ -151,7 +151,7 @@ export class AppStore {
     // --- Editor State ---
 
     /** Whether the editor is in Source (Reveal Codes) mode. */
-    @reactiveValue()
+    @jsonIgnore()
     public isSourceMode = new ReactiveValue<boolean>(true);
 
     /** Current Markdown content. */
