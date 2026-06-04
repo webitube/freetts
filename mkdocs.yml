@@ -88,7 +88,6 @@ nav:
       - KokoroAudioPlayer: api/kokoro-audio-player.md
       - KokoroChunkManager: api/kokoro-chunk-manager.md
       - KokoroChunkRenderer: api/kokoro-chunk-renderer.md
-      - KokoroPlayer: api/kokoro-player.md
       - KokoroWorkerCommunication: api/kokoro-worker-communication.md
       - HighlightingUtils: api/highlighting-utils.md
       - AppUtils: api/app-utils.md
@@ -97,6 +96,8 @@ nav:
       - SettingsPersistence: api/settings-persistence.md
       - UIManager: api/ui-manager.md
       - VoiceManager: api/voice-manager.md
+  - DevOps:
+      - DevOps Guide: DEVOPS.md
   - Testing:
       - Test Guide: testing.md
       - Unit Tests: testing/unit-tests.md
@@ -106,8 +107,30 @@ nav:
   - License: license.md
 
 markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - tables
+  - fenced_code
+  - footnotes
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg

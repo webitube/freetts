@@ -1,0 +1,257 @@
+# FreeTTS DevOps Guide
+
+This document covers building, testing, deployment, and infrastructure for the FreeTTS project. It provides instructions for developers and maintainers to set up the development environment, run the application locally, build for production, deploy to GitHub Pages, and set up continuous integration and delivery (CI/CD) pipelines.
+
+## Overview
+
+FreeTTS is a TypeScript single‑page web application (no frontend framework) that uses Vite as the build tool. The application features a hybrid Markdown editor (Milkdown) and a dual Text‑to‑Speech engine: the native Web Speech API and Kokoro TTS (a neural TTS engine powered by `kokoro-js` and ONNX Runtime Web, running in a Web Worker). State management is handled by a centralized reactive store (`AppStore`) powered by ReactiveTypescript. The project is designed to be lightweight, portable, and easy to integrate.
+
+**Source structure (17 modular files in `src/`, 16 `.ts` + 1 `.js` Web Worker):**
+- **State:** `app-store.ts` — `AppStore` class: centralized reactive state (ReactiveTypescript), localStorage persistence, enums (`EngineEnum`, `StatusEnum`, `ThemeEnum`)
+- **Entry:** `app.ts` — initializes all modules, handles DOMContentLoaded, sets up callbacks for all subsystems
+- **Editor:** `editor-manager.ts` — `EditorManager` class: Milkdown initialization and mode switching
+- **TTS:** `tts-controller.ts` — `TTSController` class: playback orchestration for both engines, selection-aware TTS
+- **Kokoro:** `kokoro-player.ts`, `kokoro-audio-player.ts`, `kokoro-chunk-manager.ts`, `kokoro-chunk-renderer.ts`, `kokoro-worker-communication.ts`
+- **Worker:** `tts-worker.js` — Web Worker running kokoro-js + onnxruntime-web with streaming text splitting
+- **Shared:** `settings-persistence.ts`, `voice-manager.ts`, `ui-manager.ts`, `app-utils.ts`, `highlighting-utils.ts`, `debug-log.ts`, `global-switches.ts`
+
+**Key technology stack:**
+- **Language:** TypeScript (ES2020 target, strict mode, experimental decorators)
+- **Build tool:** Vite 8
+- **State management:** ReactiveTypescript (reactive singleton store)
+- **Editor framework:** Milkdown 7.20 (bundled via npm)
+- **TTS engines:** Web Speech API + Kokoro TTS (`kokoro-js`, ONNX Runtime Web)
+- **Off‑thread audio generation:** Web Worker (`src/tts-worker.js`)
+- **Testing:** Vitest 4 with happy-dom (unit + integration tests)
+- **Styling:** Tailwind CSS (pre‑compiled)
+- **Package manager:** npm
+- **Hosting:** GitHub Pages (static hosting)
+
+**Kokoro model download requirements:**
+- **WebGPU backend:** `model.onnx` — **326 MB** (fp32 precision)
+- **WASM backend:** `model_q8f16.onnx` — **86 MB** (q8 quantized)
+- Model is downloaded from Hugging Face (`onnx-community/Kokoro-82M-v1.0-ONNX`) on first use and cached in browser IndexedDB
+- A stable internet connection is required for the initial download; subsequent uses are instant from cache
+- WebGPU (Chromium browsers) uses the 326 MB model; Firefox/Safari fall back to the 86 MB WASM model
+
+## Prerequisites
+
+- **Node.js** version 18 or later (includes npm)
+- **Git** for version control and deployment
+- A GitHub account with write access to the repository (for deployment)
+
+## Development Environment Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/webitube/freetts.git
+   cd freetts
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+   This installs Vite (dev dependency), Milkdown packages, ReactiveTypescript, and the Kokoro TTS stack (`kokoro-js`, `onnxruntime-web`, `phonemizer`).
+
+3. **Verify installation**
+   - Check Node.js version: `node --version`
+   - Check npm version: `npm --version`
+   - Ensure the `node_modules` directory is created.
+
+The project does not require a database, external API keys, or environment variables for basic functionality.
+
+## Local Development
+
+Run the development server with hot‑module replacement (HMR):
+
+```bash
+npm run dev
+```
+
+Vite will start the server, usually at `http://localhost:5173`. Open this URL in a browser to see the application. Any changes to source files will trigger a live reload.
+
+**Note:** The app uses ES module imports, a Web Worker, and ONNX Runtime Web, so it **requires** `npx vite` to run — it cannot be opened directly from the file system.
+
+## Building for Production
+
+Create an optimized, static build for deployment:
+
+```bash
+npx vite build
+```
+
+This command:
+- Bundles and minifies JavaScript (where applicable)
+- Copies all static assets (images, icons, CSS) to the `dist/` folder
+- Applies the **base path** configured in `vite.config.js` (`/freetts/` for GitHub Pages)
+- Generates an `index.html` that references the built assets
+
+The output directory `dist/` contains everything needed to serve the application as a static site.
+
+**Preview the production build locally:**
+```bash
+npx vite preview
+```
+This starts a local web server that serves the contents of `dist/` exactly as they would appear in production. Use it to catch any path‑related issues before deploying.
+
+### Build Configuration
+
+The build is controlled by `vite.config.js`:
+
+```javascript
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+    base: '/freetts/',
+    assetsInclude: ['**/*.onnx', '**/*.json'],
+    optimizeDeps: {
+        exclude: ['onnxruntime-web'],
+    },
+});
+```
+
+- `base`: sets the public base path for GitHub Pages (`/freetts/` — matches the `webitube/freetts` repository name). Change this to match your deployment subpath if deploying elsewhere.
+- `assetsInclude`: ensures `.onnx` model files and `.json` tokenizer files are served as static assets.
+- `optimizeDeps.exclude`: prevents Vite from trying to bundle ONNX Runtime (loaded dynamically by `kokoro-js`).
+
+## Testing
+
+The project uses **Vitest 4** with **happy-dom** for automated testing.
+
+### Test Structure
+
+- **Unit tests:** `tests/unit/` — 10 test files covering individual modules
+- **Integration tests:** `tests/integration/` — 2 test files for cross-module flows
+- **Test setup:** `tests/setup.js` — mocks for `localStorage`, `speechSynthesis`, and other DOM APIs
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run specific test file
+npx vitest run tests/unit/<filename>.test.js
+
+# Run tests matching a pattern
+npx vitest run -t "<pattern>"
+```
+
+### Manual Testing Checklist
+
+In addition to automated tests, manual testing should cover:
+
+1. **Editor modes:** Switch between "Reveal Codes" and "Visual" modes and verify content synchronization (`src/editor-manager.ts`).
+2. **Web Speech TTS:** Select text and click the play button; ensure word‑level highlighting works in both modes (`src/tts-controller.ts`, `src/highlighting-utils.ts`).
+3. **Kokoro TTS:** Switch the engine selector to "Kokoro TTS", select text, and play. Verify:
+   - Audio chunks appear as cards and play sequentially without cutting each other short
+   - The active chunk is highlighted with a blue border and blue background
+   - Clicking a chunk card seeks directly to that chunk
+   - The "Download Audio" button appears after generation completes
+   - No AbortErrors appear in the browser console
+   - Kokoro is disabled on mobile with an info indicator shown next to the engine selector
+4. **Mobile autoplay handling:** Test on iOS Safari and Android Chrome:
+   - Audio starts muted, "▶ Tap to play" indicator shows on chunk cards
+   - Tapping the indicator or play button unmutes and starts playback
+   - Auto-advance between chunks shows "▶ Tap to play" indicator on mobile
+   - Desktop browsers still auto-play without requiring user interaction
+5. **Engine switching:** Toggle between Web Speech and Kokoro, verify each plays correctly.
+6. **Theme toggling:** Click the theme icon and verify that light/dark modes are applied and persisted (`src/ui-manager.ts`).
+7. **Export features:** Test the "Copy" and "Download .md" buttons.
+8. **Responsive layout:** Resize the browser and confirm the UI adapts correctly.
+9. **Pitch slider:** Test pitch control (range: -2 to +2, step: 0.5) in both Web Speech and Kokoro TTS modes — it should work on all platforms and engines. Note: Safari Web Speech omits pitch (`if (!isSafari)`).
+10. **Settings persistence:** Verify engine, voice, speed, pitch are saved to localStorage under key `freetts-settings` and restored on reload (`src/settings-persistence.ts`, `src/app-store.ts`).
+11. **Keyboard shortcut:** Verify `Ctrl+Enter` (or `Cmd+Enter`) toggles playback.
+12. **Reset Settings button:** Verify it resets all TTS controls to defaults while keeping user preferences.
+
+## Deployment
+
+Deployment is handled automatically by **GitHub Actions**. A workflow file (`.github/workflows/deploy.yml`) builds the project and publishes to GitHub Pages on every push to the `master` branch.
+
+**Setup steps (one-time):**
+1. In your GitHub repository, go to **Settings → Pages** and set the source branch to `gh-pages`.
+2. Push to `master` — the workflow under the **Actions** tab will build and deploy automatically.
+
+The live site will be available at `https://webitube.github.io/freetts/`.
+
+> **Note:** The `gh-pages` npm package is not used — it fails on Windows (`ENAMETOOLONG`). Always use the GitHub Actions workflow for deployment.
+
+### Deploy to Other Static Hosts (Netlify, Vercel, Cloudflare Pages)
+
+The built `dist/` folder can be deployed to any static hosting service.
+
+**Netlify example:**
+1. Connect your repository to Netlify.
+2. Set the build command: `npm run build`
+3. Set the publish directory: `dist`
+4. Add an environment variable (if needed) for the base path: `PUBLIC_URL=/`
+
+**Important:** If you deploy to a service that serves the site at the root (not a subpath), update `vite.config.js` to set `base: '/'`.
+
+## Continuous Integration and Delivery (CI/CD)
+
+Beyond deployment, you can set up additional CI steps to ensure code quality:
+
+- **Linting:** Add ESLint and run it in the workflow.
+- **Formatting:** Use Prettier to enforce consistent style.
+- **Security scanning:** Integrate `npm audit` or third‑party security scanners.
+
+Example extended workflow step:
+
+```yaml
+- name: Lint
+  run: npm run lint   # if you add a lint script
+- name: Audit dependencies
+  run: npm audit --audit-level=high
+```
+
+## Monitoring and Maintenance
+
+Because FreeTTS is a static front‑end application, monitoring focuses on user‑facing functionality and asset availability.
+
+1. **Regularly test the live site** for TTS compatibility (browser updates can affect the Web Speech API).
+2. **Check browser compatibility:** The application uses modern JavaScript features; ensure it works on target browsers (Chrome, Firefox, Safari, Edge).
+3. **Update dependencies** periodically:
+   ```bash
+   npm outdated
+   npm update
+   npm audit fix
+   ```
+4. **Review GitHub Pages build logs** if deployments fail.
+
+## Troubleshooting
+
+| Problem | Possible cause | Solution |
+|---------|---------------|----------|
+| Local dev server won’t start | Port 5173 already in use | Run `npx vite --port 3000` or kill the process using the port. |
+| Milkdown editor not loading in Visual mode | Bundling issue or dependency mismatch | Check that `npm install` completed successfully and all Milkdown packages match versions. |
+| Kokoro TTS never starts speaking | Model not downloaded yet (first load) | The Kokoro 82M ONNX model downloads on first use (~200 MB). Wait for "Kokoro TTS ready." status. |
+| Kokoro TTS uses WASM instead of WebGPU | Browser doesn’t support WebGPU | Falls back to WASM automatically. A `powerPreference` Chromium warning is harmless (crbug.com/369219127). |
+| Kokoro TTS disabled on mobile | Mobile Kokoro disable feature | Engine dropdown shows Kokoro TTS as disabled with "Kokoro disabled on mobile" info indicator. This is expected behavior. |
+| TTS not speaking/highlighting (Web Speech) | Web Speech API not supported or voice not available | Use a modern browser (Chrome/Edge). Check browser permissions for speech synthesis. |
+| Kokoro TTS audio muted on mobile (iOS Safari) | Mobile autoplay policy blocks unmuted playback | Expected behavior — shows "▶ Tap to play" indicator. User must tap to unmute and play. Desktop browsers auto-play normally. |
+| Kokoro TTS NotAllowedError in console | Autoplay blocked by browser (mobile or muted tab) | Shows "▶ Tap to play" indicator or "Tap the play button to start audio" message. User interaction required to start playback. |
+| Built site shows blank page | Incorrect base path for hosting | Adjust `base` in `vite.config.js` to match your deployment subpath. |
+| GitHub Pages returns 404 | Repository not configured for Pages, or wrong branch | In repository Settings → Pages, set source branch to `gh‑pages` (or `main/docs`). |
+| Deployment workflow fails | Insufficient permissions | Ensure the workflow has `contents: write` permission and the `GITHUB_TOKEN` is present. |
+
+## References
+
+- [Vite Documentation](https://vitejs.dev/)
+- [GitHub Pages Documentation](https://docs.github.com/en/pages)
+- [Milkdown Documentation](https://milkdown.dev/)
+- [Web Speech API MDN](https://developer.mozilla.org/en‑US/docs/Web/API/Web_Speech_API)
+- [Kokoro TTS / kokoro-js](https://github.com/nicklausw/kokoro-js)
+- [ONNX Runtime Web](https://onnxruntime.ai/)
+- [Tailwind CSS](https://tailwindcss.com/)
+
+---
+
+*Last updated: 2026‑05‑27*

@@ -305,3 +305,9 @@ export function cleanMarkdown(text: string): string {
 | `container` | `div` | Editor mode toggle container |
 | `btn-source` | `button` | Switch to Source mode |
 | `btn-visual` | `button` | Switch to Visual mode |
+## Related Documentation
+
+- **[DevOps Guide](DEVOPS.md)** — Building, testing, and deployment.
+- **[TypeScript API: EditorManager](api/editor-manager.md)** — Detailed EditorManager API.
+- **[Architecture Overview](app_logic.md)** — System architecture and module design.
+- **[Testing: Editor Modes](testing/unit-tests.md)** — Editor mode unit tests.

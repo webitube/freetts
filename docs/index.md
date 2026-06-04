@@ -64,12 +64,28 @@ npm run build
 npm run test
 ```
 
+## Documentation Structure
+
+This documentation is generated using [MkDocs](https://www.mkdocs.org/) with the Material theme. The documentation is organized into the following sections:
+
+| Section | Description |
+|---------|-------------|
+| [Getting Started](install_setup.md) | Installation, setup, and usage guide |
+| [Architecture](app_logic.md) | System architecture and module design |
+| [TypeScript API](ts_docs.md) | API reference for all TypeScript modules |
+| [DevOps](DEVOPS.md) | Building, testing, deployment, and CI/CD |
+| [Testing](testing.md) | Test guide, unit tests, and integration tests |
+| [ReactiveTypescript](reactive-typescript.md) | Reactive state management documentation |
+| [Changelog](changelog.md) | Version history and notable changes |
+| [License](license.md) | License information |
+
 ## Navigation
 
 - **[Getting Started](install_setup.md)** — Installation and setup instructions.
 - **[Usage Guide](usage.md)** — How to use FreeTTS effectively.
 - **[Architecture](app_logic.md)** — Deep dive into the system architecture.
 - **[TypeScript API](ts_docs.md)** — API reference documentation.
+- **[DevOps](DEVOPS.md)** — Building, testing, deployment, and CI/CD pipelines.
 - **[Testing](testing.md)** — Testing guide and coverage information.
 
 ## License

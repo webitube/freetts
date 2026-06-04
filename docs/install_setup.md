@@ -129,3 +129,10 @@ npm install
 
 - **Web Speech API:** Voice availability depends on your OS and browser. Try Chrome on Windows/macOS for the most voices.
 - **Kokoro:** Wait for the model download to complete. Check the status indicator in the UI.
+
+## Related Documentation
+
+- **[DevOps Guide](DEVOPS.md)** — Comprehensive build, test, deployment, and CI/CD instructions.
+- **[Usage Guide](usage.md)** — How to use FreeTTS effectively.
+- **[Architecture Overview](app_logic.md)** — System architecture and module design.
+- **[Testing Guide](testing.md)** — Test structure and running tests.

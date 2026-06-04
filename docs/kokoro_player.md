@@ -222,4 +222,11 @@ const kokoroPlayer = new KokoroPlayer(
 
 // Playback
 await kokoroPlayer.play(text, voice, speed, startOffset);
-```
+
+## Related Documentation
+
+- **[DevOps Guide](DEVOPS.md)** — Building, testing, and deployment.
+- **[TypeScript API: KokoroPlayer](api/kokoro-player.md)** — Detailed KokoroPlayer API.
+- **[TTS Engines](tts_engines.md)** — Overview of both TTS engines.
+- **[Architecture Overview](app_logic.md)** — System architecture and module design.
+- **[Testing: Kokoro](testing/unit-tests.md)** — Kokoro unit tests.```

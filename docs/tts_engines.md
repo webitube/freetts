@@ -245,3 +245,11 @@ const cleaned = cleanMarkdown(rawText);
 ```
 
 This ensures natural-sounding speech without reading out formatting symbols.
+
+## Related Documentation
+
+- **[DevOps Guide](DEVOPS.md)** — Building, testing, and deployment.
+- **[TypeScript API: TTSController](api/tts-controller.md)** — Detailed TTSController API.
+- **[Kokoro Player](kokoro_player.md)** — Kokoro chunk-based playback architecture.
+- **[Architecture Overview](app_logic.md)** — System architecture and module design.
+- **[Testing: TTS Controller](testing/unit-tests.md)** — TTS controller unit tests.
