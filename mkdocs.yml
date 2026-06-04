@@ -1,0 +1,113 @@
+site_name: FreeTTS Documentation
+site_description: FreeTTS - Free Markdown Editor with integrated Web-based Text-to-Speech
+site_url: https://webitube.github.io/freetts
+repo_url: https://github.com/webitube/freetts
+repo_name: webitube/freetts
+
+copyright: Copyright &copy; 2025 FreeTTS
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.code.select
+  icon:
+    repo: fontawesome/brands/github
+    logo: material/book-open-page-variant
+  favicon: images/favicon.ico
+
+plugins:
+  - search
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - tables
+  - fenced_code
+  - footnotes
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: install_setup.md
+      - Usage Guide: usage.md
+  - Architecture:
+      - Overview: app_logic.md
+      - State Management: state_management.md
+      - TTS Engines: tts_engines.md
+      - Editor System: editor_system.md
+      - Kokoro Player: kokoro_player.md
+  - TypeScript API:
+      - API Reference: ts_docs.md
+      - AppStore: api/app-store.md
+      - TTSController: api/tts-controller.md
+      - EditorManager: api/editor-manager.md
+      - KokoroPlayer: api/kokoro-player.md
+      - KokoroAudioPlayer: api/kokoro-audio-player.md
+      - KokoroChunkManager: api/kokoro-chunk-manager.md
+      - KokoroChunkRenderer: api/kokoro-chunk-renderer.md
+      - KokoroPlayer: api/kokoro-player.md
+      - KokoroWorkerCommunication: api/kokoro-worker-communication.md
+      - HighlightingUtils: api/highlighting-utils.md
+      - AppUtils: api/app-utils.md
+      - DebugLog: api/debug-log.md
+      - GlobalSwitches: api/global-switches.md
+      - SettingsPersistence: api/settings-persistence.md
+      - UIManager: api/ui-manager.md
+      - VoiceManager: api/voice-manager.md
+  - Testing:
+      - Test Guide: testing.md
+      - Unit Tests: testing/unit-tests.md
+      - Integration Tests: testing/integration-tests.md
+  - ReactiveTypescript: reactive-typescript.md
+  - Changelog: changelog.md
+  - License: license.md
+
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

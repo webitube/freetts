@@ -11,6 +11,9 @@
             "approve": true,
             "matchCommandLine": true
         },
-        "npx tsc": true
+        "npx tsc": true,
+        ".\\venv\\Scripts\\Activate.ps1": true,
+        "pip": true,
+        "mkdocs": true
     }
 }

@@ -4,3 +4,4 @@ logs/
 *.bat
 *.sh
 *.ps1
+site/
