@@ -1,3 +1,6 @@
 [submodule "ReactiveTypescript"]
 	path = ReactiveTypescript
 	url = https://github.com/webitube/ReactiveTypescript.git
+[submodule "DocTemplates"]
+	path = DocTemplates
+	url = https://github.com/webitube/DocTemplates.git
