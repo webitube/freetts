@@ -105,7 +105,37 @@ Create your Markdown files inside your docs/ folder, using the triple-colon (:::
 
 Run **mkdocs serve** in your terminal, and navigate to http://127.0.0.1:8000/ to view your multi-language aggregated site. \[6\]
 
-Would you like help **setting up a GitHub Actions script** to build and host this automatically on [**GitHub Pages**](https://pages.github.com/), or do you need help debugging an unexpected **module importing error** from your local setup?
+
+**🌟 6\. Configure Mermaid Support**
+
+```mkdocs.yml
+site_name: Master Polyglot Documentation
+
+theme:
+  name: material
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+        typescript:
+          options:
+            show_source: true
+        csharp:
+          options:
+            show_source: true
+
+# 🌟 ADD THIS BLOCK TO ENABLE MERMAID RENDERING
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+```
+
 
 \[1\] [https://www.sitepoint.com](https://www.sitepoint.com/building-product-documentation-mkdocs/)  
 \[2\] [https://medium.com](https://medium.com/@pablo.lopez.santori/level-up-your-project-documentation-with-mkdocs-d04c2f92a2ff)  
