@@ -103,6 +103,7 @@ export class AppStore {
 
     /**
      * Get the singleton AppStore instance (lazy initialization).
+     *
      * @returns The shared AppStore instance.
      */
     public static get instance(): AppStore {
@@ -213,6 +214,8 @@ export class AppStore {
     /**
      * Serialize this store to a JSON string.
      * Reactive objects automatically flatten to their raw underlying data.
+     *
+     * @returns The serialized JSON string.
      */
     public toJSONString(): string {
         return ReactiveSerializer.serialize(this);
@@ -247,6 +250,8 @@ export class AppStore {
     /**
      * Load store state from localStorage.
      * Returns true if settings were found and hydrated, false otherwise.
+     *
+     * @returns True if settings were found and hydrated, false otherwise.
      */
     public loadFromLocalStorage(): boolean {
         try {
@@ -263,6 +268,8 @@ export class AppStore {
 
     /**
      * Check if settings exist in localStorage.
+     *
+     * @returns True if settings exist, false otherwise.
      */
     public hasSettings(): boolean {
         return localStorage.getItem(STORAGE_KEY) !== null;

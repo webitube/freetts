@@ -17,6 +17,10 @@ import { getDebugMode } from './global-switches';
 /**
  * Creates a string of a specified length filled with a given character.
  * Used to create visual separators in debug output.
+ *
+ * @param length - The length of the string.
+ * @param char - The character to repeat.
+ * @returns The resulting string.
  */
 export function repeatChar(length: number, char: string): string {
     if (typeof length !== 'number' || !Number.isInteger(length) || length < 0) {
@@ -28,6 +32,10 @@ export function repeatChar(length: number, char: string): string {
 /**
  * Log an array of messages with formatted header and footer.
  * Optionally measures execution time.
+ *
+ * @param title - The title of the log array.
+ * @param msgs - An array of messages to log.
+ * @param timerName - Optional name for the performance timer.
  */
 export function debugLogArray(title: string, msgs: string[], timerName?: string): void {
     const titleLen = title.length;
@@ -53,6 +61,9 @@ export function debugLogArray(title: string, msgs: string[], timerName?: string)
  * Log a debug message with optional timer start.
  * Formatted with visual markers (>>>, <<<).
  * Only outputs if debugMode is enabled.
+ *
+ * @param msg - The message to log.
+ * @param timerName - Optional name for the performance timer.
  */
 export function debugLog(msg: string, timerName = ''): void {
     if (getDebugMode()) {
@@ -68,6 +79,12 @@ export function debugLog(msg: string, timerName = ''): void {
     }
 }
 
+/**
+ * Ends a debug log session, optionally ending a timer.
+ *
+ * @param msg - The message to log.
+ * @param timerName - Optional name for the performance timer to end.
+ */
 export function debugLogEnd(msg: string, timerName = ''): void {
     if (getDebugMode()) {
         if (timerName !== '') {
@@ -85,6 +102,9 @@ export function debugLogEnd(msg: string, timerName = ''): void {
 /**
  * Log a warning message with optional timer start.
  * Only outputs if debugMode is enabled.
+ *
+ * @param msg - The warning message to log.
+ * @param timerName - Optional name for the performance timer.
  */
 export function debugWarn(msg: string, timerName = ''): void {
     if (getDebugMode()) {

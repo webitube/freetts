@@ -10,9 +10,9 @@
  * Traverses DOM text nodes to find the character range corresponding
  * to the given offset and length, then creates a selection range.
  *
- * @param startOffset - Character offset from the beginning of the text content
- * @param wordLength - Number of characters to highlight
- * @param visualElement - The root HTMLElement to search within
+ * @param startOffset - Character offset from the beginning of the text content.
+ * @param wordLength - Number of characters to highlight.
+ * @param visualElement - The root HTMLElement to search within.
  */
 export function highlightVisualWord(startOffset: number, wordLength: number, visualElement: HTMLElement): void {
     const selection = window.getSelection();
@@ -51,7 +51,10 @@ export function highlightVisualWord(startOffset: number, wordLength: number, vis
 }
 
 /**
- * Get cursor information from Visual mode
+ * Get cursor information from Visual mode.
+ *
+ * @param visualElement - The root HTMLElement to search within.
+ * @returns An object containing the selected text and its offset.
  */
 export function getVisualCursorInfo(visualElement: HTMLElement): { text: string; offset: number } {
     const selection = window.getSelection();
@@ -68,7 +71,10 @@ export function getVisualCursorInfo(visualElement: HTMLElement): { text: string;
 }
 
 /**
- * Clean Markdown syntax from text for TTS playback
+ * Clean Markdown syntax from text for TTS playback.
+ *
+ * @param text - The raw text containing Markdown syntax.
+ * @returns The cleaned text without Markdown syntax.
  */
 export function cleanMarkdown(text: string): string {
     return text

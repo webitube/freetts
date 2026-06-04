@@ -26,6 +26,7 @@ export class AudioPlayer {
 
     /**
      * Create a new AudioPlayer bound to a KokoroPlayer instance.
+     *
      * @param player - The parent KokoroPlayer instance.
      */
     constructor(player: any) {
@@ -34,6 +35,7 @@ export class AudioPlayer {
 
     /**
      * Register an existing audio element at the given chunk index.
+     *
      * @param chunkIndex - The chunk index to associate with the element.
      * @param audioEl - The HTMLAudioElement to register.
      */
@@ -43,6 +45,7 @@ export class AudioPlayer {
 
     /**
      * Create a new HTMLAudioElement from an audio Blob and register it.
+     *
      * @param chunkIndex - The chunk index to associate with the element.
      * @param audioBlob - The audio Blob (WAV format).
      * @returns The created HTMLAudioElement.
@@ -57,6 +60,7 @@ export class AudioPlayer {
     /**
      * Play the audio chunk at the given index.
      * On failure, delegates to `player._onChunkEnded()`.
+     *
      * @param chunkIndex - The chunk index to play.
      */
     playChunk(chunkIndex: number): void {

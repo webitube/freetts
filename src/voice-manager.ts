@@ -23,6 +23,10 @@ interface KokoroVoiceInfo {
 
 /**
  * Populate voice selector UI with the given voices array.
+ *
+ * @param elements - DOM elements object.
+ * @param voices - Array of voice information.
+ * @param savedVoice - Optional previously saved voice name.
  */
 function populateVoiceSelect(
     elements: Record<string, unknown>,
@@ -62,6 +66,11 @@ function populateVoiceSelect(
 
 /**
  * Load Web Speech voices and populate voice selector.
+ *
+ * @param elements - DOM elements object.
+ * @param synth - The Web Speech API synthesis instance.
+ * @param savedVoice - Optional previously saved voice name.
+ * @returns A promise that resolves with the loaded voices.
  */
 export function loadWebSpeechVoices(
     elements: Record<string, unknown>,

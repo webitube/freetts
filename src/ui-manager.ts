@@ -6,7 +6,9 @@
 import { AppStore, ThemeEnum } from './app-store';
 
 /**
- * Initialize theme toggle functionality
+ * Initialize theme toggle functionality.
+ *
+ * @param themeToggle - The theme toggle HTMLElement.
  */
 export function initThemeToggle(themeToggle: HTMLElement | null): void {
     if (themeToggle) {
@@ -22,7 +24,10 @@ export function initThemeToggle(themeToggle: HTMLElement | null): void {
 }
 
 /**
- * Update playback controls based on speaking state
+ * Update playback controls based on speaking state.
+ *
+ * @param elements - DOM elements map.
+ * @param active - Whether playback is active.
  */
 export function updatePlaybackControls(elements: Record<string, HTMLElement>, active: boolean): void {
     const playIcon = (elements as any).playIcon as HTMLElement;
@@ -36,7 +41,11 @@ export function updatePlaybackControls(elements: Record<string, HTMLElement>, ac
 }
 
 /**
- * Reset status message after a delay
+ * Reset status message after a delay.
+ *
+ * @param statusCallback - Callback that receives the status message string.
+ * @param delay - Delay in milliseconds before resetting. Default: `2000`.
+ * @param readyMessage - Message to display after the delay. Default: `'Ready.'`.
  */
 export function resetStatusAfterDelay(statusCallback: (msg: string) => void, delay = 2000, readyMessage = 'Ready.'): void {
     if (typeof statusCallback === 'function') {
@@ -45,7 +54,9 @@ export function resetStatusAfterDelay(statusCallback: (msg: string) => void, del
 }
 
 /**
- * Initialize help modal functionality
+ * Initialize help modal functionality.
+ *
+ * @param elements - DOM elements map.
  */
 export function initHelpModal(elements: Record<string, HTMLElement>): void {
     const helpModal = (elements as any).helpModal as HTMLElement;
@@ -66,7 +77,10 @@ export function initHelpModal(elements: Record<string, HTMLElement>): void {
 }
 
 /**
- * Initialize clipboard and download functionality
+ * Initialize clipboard and download functionality.
+ *
+ * @param elements - DOM elements map.
+ * @param statusCallback - Callback invoked with status messages.
  */
 export function initClipboardAndDownload(elements: Record<string, HTMLElement>, statusCallback: (msg: string) => void): void {
     const getMarkdownBtn = document.getElementById('get-markdown');
@@ -95,7 +109,12 @@ export function initClipboardAndDownload(elements: Record<string, HTMLElement>, 
 }
 
 /**
- * Update UI state for playback
+ * Update UI state for playback.
+ *
+ * @param elements - DOM elements map.
+ * @param active - Whether playback is active.
+ * @param _isSpeaking - Optional speaking state.
+ * @returns True if the UI state was updated.
  */
 export function setUIState(elements: Record<string, HTMLElement>, active: boolean, _isSpeaking?: boolean): boolean {
     updatePlaybackControls(elements, active);

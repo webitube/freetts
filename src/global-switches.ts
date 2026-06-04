@@ -8,16 +8,18 @@
 let debugMode: boolean = false;
 
 /**
- * Enable or disable debug mode globally
- * @param debug - True to enable debug logging, false to disable
+ * Enable or disable debug mode globally.
+ *
+ * @param debug - True to enable debug logging, false to disable.
  */
 export function setDebugMode(debug: boolean): void {
     debugMode = debug;
 }
 
 /**
- * Get the current debug mode status
- * @returns Current debug mode state
+ * Get the current debug mode status.
+ *
+ * @returns The current debug mode state.
  */
 export function getDebugMode(): boolean {
     return debugMode;

@@ -15,7 +15,6 @@ import { AppStore } from './app-store';
  * @param status - The status HTMLElement to update (may be undefined).
  * @param msg - The status message text.
  * @param device - Optional device string; falls back to `AppStore.activeDevice`.
- * @returns void
  */
 export function updateStatusMsg(status: HTMLElement | undefined, msg: string, device?: string): void {
     if (status != undefined) {
@@ -30,7 +29,6 @@ export function updateStatusMsg(status: HTMLElement | undefined, msg: string, de
  * @param statusCallback - Callback that receives the status message string.
  * @param delay - Delay in milliseconds before resetting. Default: `2000`.
  * @param readyMessage - Message to display after the delay. Default: `'Ready.'`.
- * @returns void
  */
 export function resetStatusAfterDelay(statusCallback: (msg: string) => void, delay = 2000, readyMessage = 'Ready.'): void {
     if (typeof statusCallback === 'function') {
@@ -43,7 +41,6 @@ export function resetStatusAfterDelay(statusCallback: (msg: string) => void, del
  *
  * @param element - The HTMLElement to toggle (may be null or undefined).
  * @param hidden - Whether the element should be hidden.
- * @returns void
  */
 export function toggleHidden(element: HTMLElement | null | undefined, hidden: boolean): void {
     if (element) {
@@ -78,7 +75,6 @@ export function getSelectedEngine(): [string, string] {
  * Update the `#active-device-msg` element to reflect the selected engine and device.
  *
  * @param activeDevice - Optional device string; falls back to `AppStore.activeDevice`.
- * @returns void
  */
 export function updateSelectedEngine(activeDevice?: string): void {
     const [selectedEngineText, selectedEngine] = getSelectedEngine();

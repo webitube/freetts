@@ -27,8 +27,9 @@ export class EditorManager {
 
     /**
      * Create a new EditorManager instance.
-     * @param elements - DOM elements map (source, visual, container, btnSource, btnVisual)
-     * @param initialValue - Initial Markdown content to load
+     *
+     * @param elements - DOM elements map (source, visual, container, btnSource, btnVisual).
+     * @param initialValue - Initial Markdown content to load.
      */
     constructor(elements: Record<string, unknown>, initialValue: string) {
         this.elements = elements;
@@ -41,6 +42,8 @@ export class EditorManager {
      * Create the Milkdown editor instance with all required plugins.
      * Configures Nord theme, CommonMark, GFM, history, and listener plugins.
      * Syncs markdown updates back to AppStore and the source textarea.
+     *
+     * @returns A promise that resolves when the editor is created.
      */
     async createEditor(): Promise<void> {
         const visualEl = (this.elements as any).visual as HTMLElement;
@@ -65,6 +68,8 @@ export class EditorManager {
     /**
      * Switch to Visual (WYSIWYG) mode.
      * Lazily initializes Milkdown on first switch, otherwise replaces content.
+     *
+     * @returns A promise that resolves when the switch is complete.
      */
     async switchToVisual(): Promise<void> {
         if (AppStore.instance.isSourceMode.get()) {

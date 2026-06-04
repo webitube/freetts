@@ -102,7 +102,7 @@ export class KokoroPlayer {
     _onChunkPlay?: (index: number) => void;
 
     /**
-     * Creates a new KokoroPlayer instance.
+     * Create a new KokoroPlayer instance.
      *
      * @param containerId - ID of the DOM container for chunk cards.
      * @param statusCallback - Callback invoked with status messages.
@@ -137,6 +137,7 @@ export class KokoroPlayer {
 
     /**
      * Get the DOM container element for chunk cards.
+     *
      * @returns The container HTMLElement, or null if not found.
      */
     _getContainer(): HTMLElement | null {
@@ -145,6 +146,7 @@ export class KokoroPlayer {
 
     /**
      * Get the chunk card element at the given index.
+     *
      * @param index - The chunk index to look up.
      * @returns The card HTMLElement, or null if not found.
      */

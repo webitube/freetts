@@ -22,6 +22,7 @@ export class ChunkRenderer {
 
     /**
      * Create a new ChunkRenderer bound to a KokoroPlayer instance.
+     *
      * @param player - The parent KokoroPlayer instance.
      */
     constructor(player: any) {
@@ -30,6 +31,7 @@ export class ChunkRenderer {
 
     /**
      * Get the chunk container element by ID.
+     *
      * @returns The container HTMLElement, or null if not found.
      */
     _getContainer(): HTMLElement | null {
@@ -38,6 +40,7 @@ export class ChunkRenderer {
 
     /**
      * Reset playback state: pause all audio and remove playing indicators.
+     *
      * @param container - The container element to reset (may be null).
      */
     _resetPlaybackState(container: HTMLElement | null): void {

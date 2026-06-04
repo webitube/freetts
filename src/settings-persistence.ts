@@ -9,6 +9,8 @@ import { AppStore, EngineEnum } from './app-store';
 
 /**
  * Check if settings exist in localStorage.
+ *
+ * @returns True if settings exist, false otherwise.
  */
 export function hasSettings(): boolean {
     return AppStore.instance.hasSettings();
@@ -17,7 +19,8 @@ export function hasSettings(): boolean {
 /**
  * Save settings if none exist yet.
  * Syncs from DOM elements (if provided) before saving.
- * @param elements - DOM elements object (retained for backward compat)
+ *
+ * @param elements - DOM elements object (retained for backward compat).
  */
 export function saveIfNoSettings(elements?: Record<string, unknown>): void {
     if (!hasSettings()) {
@@ -48,7 +51,9 @@ export function saveIfNoSettings(elements?: Record<string, unknown>): void {
 
 /**
  * Get the saved voice for a specific engine.
- * @param engine - Engine name ('webspeech' or 'kokoro')
+ *
+ * @param engine - Engine name ('webspeech' or 'kokoro').
+ * @returns The saved voice name.
  */
 export function getSavedVoice(engine: string): string {
     return AppStore.instance.getSavedVoice(engine);
@@ -56,8 +61,9 @@ export function getSavedVoice(engine: string): string {
 
 /**
  * Set the saved voice for a specific engine.
- * @param engine - Engine name ('webspeech' or 'kokoro')
- * @param savedVoice - Voice name to save
+ *
+ * @param engine - Engine name ('webspeech' or 'kokoro').
+ * @param savedVoice - Voice name to save.
  */
 export function setSavedVoice(engine: string, savedVoice: string): void {
     AppStore.instance.setSavedVoice(engine, savedVoice);
@@ -65,8 +71,9 @@ export function setSavedVoice(engine: string, savedVoice: string): void {
 
 /**
  * Save TTS settings to localStorage.
- * @param elements - DOM elements object (retained for backward compat)
- * @param saveEngineOnly - If true, only save the engine selection
+ *
+ * @param elements - DOM elements object (retained for backward compat).
+ * @param saveEngineOnly - If true, only save the engine selection.
  */
 export function saveTTSSettings(elements?: Record<string, unknown>, saveEngineOnly = false): void {
     if (elements) {

@@ -42,7 +42,7 @@ export class TTSController {
 
     /**
      * Creates a new TTSController instance.
-     * 
+     *
      * @param elements - Map of DOM elements used by the controller.
      * @param editorManager - Manager for switching between Source and Visual editor modes.
      * @param kokoroPlayer - Kokoro TTS player instance for neural speech synthesis.
@@ -84,6 +84,7 @@ export class TTSController {
 
     /**
      * Handles changes to the global isPlaying state.
+     *
      * @param isPlaying - Whether playback should be active.
      */
     private handlePlaybackStateChange(isPlaying: boolean): void {

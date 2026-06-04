@@ -43,6 +43,7 @@ export class WorkerCommunication {
 
     /**
      * Create a new WorkerCommunication bound to a KokoroPlayer instance.
+     *
      * @param player - The parent KokoroPlayer instance.
      */
     constructor(player: any) {
@@ -51,6 +52,7 @@ export class WorkerCommunication {
 
     /**
      * Detect WebGPU availability on the current browser.
+     *
      * @returns True if WebGPU is available and an adapter can be requested.
      */
     async detectWebGPU(): Promise<boolean> {

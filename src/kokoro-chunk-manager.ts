@@ -20,6 +20,7 @@ export class ChunkManager {
 
     /**
      * Create a new ChunkManager bound to a KokoroPlayer instance.
+     *
      * @param player - The parent KokoroPlayer instance.
      */
     constructor(player: any) {
@@ -28,6 +29,7 @@ export class ChunkManager {
 
     /**
      * Start playback of the chunk at the given index.
+     *
      * @param chunkIndex - The chunk index to begin playing.
      */
     startChunkPlayback(chunkIndex: number): void {
@@ -36,6 +38,7 @@ export class ChunkManager {
 
     /**
      * Handle a user click on a chunk card (seek to that chunk).
+     *
      * @param chunkIndex - The chunk index to seek to.
      */
     handleChunkClick(chunkIndex: number): void {
@@ -44,6 +47,7 @@ export class ChunkManager {
 
     /**
      * Notify the player that a chunk has finished playing.
+     *
      * @param chunkIndex - The chunk index that ended.
      */
     onChunkEnded(chunkIndex: number): void {
@@ -52,6 +56,7 @@ export class ChunkManager {
 
     /**
      * Check whether the current browser is a mobile browser.
+     *
      * @returns True if running on a mobile device.
      */
     isMobileBrowser(): boolean {
